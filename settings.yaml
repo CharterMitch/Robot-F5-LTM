@@ -6,3 +6,7 @@ user:
   username: admin
   password: admin
 ixload: 10.244.24.23
+load_balancing:
+  pool: http_test_pool
+  virtual_server: 198.18.32.1
+  nodes:  ['198.18.64.11','198.18.64.12']

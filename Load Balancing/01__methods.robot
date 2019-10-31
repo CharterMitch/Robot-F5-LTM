@@ -1,11 +1,7 @@
 *** Settings ***
+# https://clouddocs.f5.com/api/icontrol-soap/LocalLB__LBMethod.html
 Resource    ../common.resource
-
-*** Variables ***
-# These variables must match the variables in __init__.robot
-${pool}     http_test_pool
-${node_1}   198.18.64.11
-${node_2}   198.18.64.12
+Variables   settings.yaml
 
 *** Test Cases ***
 Round Robin
@@ -14,8 +10,8 @@ Round Robin
     Sleep   120
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
-    ${c1}   Set variable    &{total_connections}[${node_1}] 
-    ${c2}   Set variable    &{total_connections}[${node_2}]
+    ${c1}   Set variable    &{total_connections}[${nodes}[0]] 
+    ${c2}   Set variable    &{total_connections}[${nodes}[1]]
     ${diff}=    Percent difference between ${c1} and ${c2}
     # Each node should have more than 0 connections
     Should be true  ${c1}>0
@@ -35,8 +31,8 @@ Member Ratio
     Sleep   120
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
-    ${c1}   Set variable    &{total_connections}[${node_1}] 
-    ${c2}   Set variable    &{total_connections}[${node_2}]
+    ${c1}   Set variable    &{total_connections}[${nodes}[0]] 
+    ${c2}   Set variable    &{total_connections}[${nodes}[1]]
     ${diff}=    Percent difference between ${c1} and ${c2}
     # Each node should have more than 0 connections
     Should be true  ${c1}>0
@@ -46,3 +42,7 @@ Member Ratio
     # Difference between pool members greater than 80%
     Should be true  ${diff}>80
     Log     Member ratio connection difference is ${diff}
+
+Fastest App Response
+    # Can the IXIA setup two HTTP server and add 100ms of delay to the second?
+    Log     Not implemented.
