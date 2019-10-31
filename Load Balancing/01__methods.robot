@@ -7,7 +7,7 @@ Variables   settings.yaml
 Round Robin
     [Documentation]     Connections are distributed evenly across all 
     ...                 members in the pool.
-    Sleep   30
+    Sleep   60
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
     ${c1}   Set variable    &{total_connections}[${node_1}] 
@@ -28,7 +28,7 @@ Member Ratio
     # Set the ratio of the first member to 10 and the second member to 1
     Set pool ratio   ${pool}    10      1
     Reset pool statistics   ${pool}
-    Sleep   30
+    Sleep   60
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
     ${c1}   Set variable    &{total_connections}[${node_1}] 
