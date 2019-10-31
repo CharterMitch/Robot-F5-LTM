@@ -1,0 +1,8 @@
+f5_a:
+  host: 10.240.72.161
+f5_b:
+  host: 10.240.72.162
+user:
+  username: admin
+  password: admin
+ixload: 10.244.24.23
