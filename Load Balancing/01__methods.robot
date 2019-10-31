@@ -7,11 +7,11 @@ Variables   settings.yaml
 Round Robin
     [Documentation]     Connections are distributed evenly across all 
     ...                 members in the pool.
-    Sleep   120
+    Sleep   30
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
-    ${c1}   Set variable    &{total_connections}[@{nodes}[0]] 
-    ${c2}   Set variable    &{total_connections}[@{nodes}[1]]
+    ${c1}   Set variable    &{total_connections}[${node_1}] 
+    ${c2}   Set variable    &{total_connections}[${node_2}]
     ${diff}=    Percent difference between ${c1} and ${c2}
     # Each node should have more than 0 connections
     Should be true  ${c1}>0
@@ -28,11 +28,11 @@ Member Ratio
     # Set the ratio of the first member to 10 and the second member to 1
     Set pool ratio   ${pool}    10      1
     Reset pool statistics   ${pool}
-    Sleep   120
+    Sleep   30
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
-    ${c1}   Set variable    &{total_connections}[@{nodes}[0]] 
-    ${c2}   Set variable    &{total_connections}[@{nodes}[1]]
+    ${c1}   Set variable    &{total_connections}[${node_1}] 
+    ${c2}   Set variable    &{total_connections}[${node_2}]
     ${diff}=    Percent difference between ${c1} and ${c2}
     # Each node should have more than 0 connections
     Should be true  ${c1}>0

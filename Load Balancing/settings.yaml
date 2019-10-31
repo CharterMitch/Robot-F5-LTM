@@ -1,3 +1,5 @@
 pool: http_test_pool
 virtual_server: 198.18.32.1
 nodes:  ['198.18.64.11','198.18.64.12']
+node_1: '198.18.64.11'
+node_2: '198.18.64.12'
