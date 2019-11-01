@@ -8,6 +8,7 @@ Variables   settings.yaml
 Round Robin
     [Documentation]     Connections are distributed evenly across all 
     ...                 members in the pool.
+    # TODO: Start IXIA Test (currently doing manually)
     Sleep   60
     # Gather traffic statistics
     &{total_connections}=   Get total connections from pool ${pool}
