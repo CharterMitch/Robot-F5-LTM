@@ -7,14 +7,12 @@ Library     ../F5Rest.py  ${f5_a}   ${user}
 *** Test Cases ***
 V4 Default Route
     [Documentation]     Verify we received default route from upstream peer.
-    Sleep               15
     ${result}           imish -c 'show ip route 0.0.0.0'
     Should contain      ${result}    Known via "bgp"
     Log                 ${result}   
 
 V6 Default Route
     [Documentation]     Verify we received default route from upstream peer.
-    Sleep               15
     ${result}           imish -c 'show ipv6 route ::/0'
     Should contain      ${result}    Known via "bgp"
     Log                 ${result} 
