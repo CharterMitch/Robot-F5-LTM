@@ -4,43 +4,17 @@ Resource    ../common.resource
 Variables   settings.yaml
 Library     ../F5Rest.py  ${f5_a}   ${user}
 
-*** Variables ***
-# What variables should we declare directly in the test?
-${kernel_route}     198.18.32.1
-
 *** Test Cases ***
-Neighbors Established
-    [Documentation]     Verify BGP neighbors are all established.
+V4 Default Route
+    [Documentation]     Verify we received default route from upstream peer.
     Sleep               15
-    ${result}           imish -c 'show bgp neighbors'
-    Should contain      ${result}    Established
-    Should not contain  ${result}    Active
-    Should not contain  ${result}    Idle
+    ${result}           imish -c 'show ip route 0.0.0.0'
+    Should contain      ${result}    Known via "bgp"
     Log                 ${result}   
 
-Shutdown Neighbor
-    [Documentation]     Verify neighbor shutdown command.
-    imish -c 'enable','conf t','router bgp 65279','neighbor 198.18.96.1 shutdown'
-    Sleep               5
-    ${result}           imish -c 'show bgp neighbors 198.18.96.1'
-    Should contain      ${result}    Administratively shut down
-    Should not contain  ${result}    Established
-    Log                 ${result}
-
-No Shutdown Neighbor
-    [Documentation]     Verify no neighbor shutdown command.
-    imish -c 'enable','conf t','router bgp 65279','no neighbor 198.18.96.1 shutdown' 
-    Sleep               10
-    ${result}           imish -c 'show bgp neighbors 198.18.96.1'
-    Should contain      ${result}    Established
-    Should not contain  ${result}    Idle
+V6 Default Route
+    [Documentation]     Verify we received default route from upstream peer.
+    Sleep               15
+    ${result}           imish -c 'show ipv6 route ::/0'
+    Should contain      ${result}    Known via "bgp"
     Log                 ${result} 
-
-Kernel route advertisement
-    [Documentation]     Advertise a kernel route to an upstream peer.
-    ${result}           imish -c 'show bgp neighbors'
-    Log     test
-
-Prefix list
-    [Documentation]     Test that a v4 prefix list blocks an advertisement.
-    Log     test2
