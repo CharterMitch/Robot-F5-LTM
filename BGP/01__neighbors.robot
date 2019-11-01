@@ -49,7 +49,7 @@ No Shutdown V6 Neighbor
 
 *** Keywords ***
 Neighbors Established
-    [Documentation]     Verify all BGP neighbors in the established state.
+    [Documentation]     Verify all BGP neighbors are in the established state.
     ${result}           imish -c 'show bgp neighbors'
     Should contain      ${result}    Established
     Should not contain  ${result}    Active
