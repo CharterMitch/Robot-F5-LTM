@@ -8,7 +8,7 @@ logger.warn("Importing F5 REST library")
 
 class F5Rest():
 
-    ROBOT_LIBRARY_SCOPE = "TEST SUITE"
+    ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
     def __init__(self,device,user):
         self.hostname = device['host']
