@@ -5,8 +5,7 @@ Variables   settings.yaml
 Library     ../F5Rest.py  ${f5_a}   ${user}
 
 *** Test Cases ***
-Verify 9000 MTU
+Tagged VLAN passes traffic
     [Documentation]
-    # Set VLAN MTU to 9000
-    # Pass IXIA traffic at MTU 9000
+    # Some IXIA test ...
     No Operation
