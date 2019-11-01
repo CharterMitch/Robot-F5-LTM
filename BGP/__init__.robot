@@ -20,9 +20,9 @@ Log Configuration
     [Documentation]     Log the running imish configuration from primary
     ...                 and secondary F5 devices.
     [tags]  Setup   
-    ${result}       primary.zebos -c 'show run'
+    ${result}       primary.imish -c 'show run'
     Log             Primary F5: ${result}
-    ${result}       secondary.zebos -c 'show run'
+    ${result}       secondary.imish -c 'show run'
     Log             Secondary F5: ${result}
 
 Teardown
