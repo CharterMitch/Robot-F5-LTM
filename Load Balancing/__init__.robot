@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation    Load Balancing method tests
 Resource        ../common.resource
+Library         ../F5.py
 Variables       settings.yaml
 Suite Setup     Setup F5
 Suite Teardown  Teardown

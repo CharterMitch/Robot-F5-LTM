@@ -1,9 +1,10 @@
 import functools
-
-import bigsuds
 from robot.api.deco import keyword
 from robot.api import logger
 from robot.utils import ConnectionCache
+
+import bigsuds
+from f5.bigip import ManagementRoot
 
 #logger.warn("Importing custom F5 library")
 
