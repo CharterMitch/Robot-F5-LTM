@@ -9,20 +9,16 @@ Library     ../F5Rest.py  ${f5_a}   ${user}
 ${kernel_route}     198.18.32.1
 
 *** Test Cases ***
-IPv4 Neighbors Established
-    [Documentation]     Verify IPv4 BGP neighbors.
-    ${result}     zebos -c 'show bgp neighbors 198.18.96.1 | grep state'
-    Log                 ${result}
+Neighbors Established
+    [Documentation]     Verify BGP neighbors.
+    ${result}           zebos -c 'show bgp neighbors'
     Should contain      ${result}    Established
     Should not contain  ${result}    Active
-
-IPv6 Neighbors Established
-    [Documentation]     Verify IPv6 BGP neighbors.
-    ${result}     zebos -c 'show bgp summary'
-    Log     ${result}
+    Log                 ${result}   
 
 Kernel route advertisement
     [Documentation]     Advertise a kernel route to an upstream peer.
+    ${result}           zebos -c 'show bgp neighbors'
     Log     test
 
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot generator="Robot 3.1.2 (Python 3.7.3 on win32)" generated="20191101 11:39:33.030" rpa="false">
+<robot generator="Robot 3.1.2 (Python 3.7.3 on win32)" generated="20191101 12:02:06.571" rpa="false">
 <suite id="s1" name="F5 Ltm" source="C:\Users\p2901112\Documents\robots\f5_ltm">
 <kw name="Setup lab" type="setup">
 <doc>Configure the lab topology for all of the test cases.
@@ -9,107 +9,366 @@ This requires the F5s to be previously licensed.</doc>
 <arguments>
 <arg>${software_version}</arg>
 </arguments>
-<msg timestamp="20191101 11:39:33.746" level="INFO">13.1.3</msg>
-<status status="PASS" starttime="20191101 11:39:33.746" endtime="20191101 11:39:33.746"></status>
+<msg timestamp="20191101 12:02:07.246" level="INFO">13.1.3</msg>
+<status status="PASS" starttime="20191101 12:02:07.246" endtime="20191101 12:02:07.246"></status>
 </kw>
-<status status="PASS" starttime="20191101 11:39:33.745" endtime="20191101 11:39:33.747"></status>
+<status status="PASS" starttime="20191101 12:02:07.246" endtime="20191101 12:02:07.247"></status>
 </kw>
 <suite id="s1-s1" name="BGP" source="C:\Users\p2901112\Documents\robots\f5_ltm\BGP">
 <kw name="Setup F5" type="setup">
 <tags>
 <tag>Setup</tag>
 </tags>
-<doc>Configure BGP peering.</doc>
-<kw name="zebos -c 'show ip bgp summary'" library="secondary">
+<doc>Setup for the F5 BGP routing tests.</doc>
+<kw name="Log Configuration">
+<tags>
+<tag>Setup</tag>
+</tags>
+<doc>Log the running imish configuration from primary
+and secondary F5 devices.</doc>
+<kw name="zebos -c 'show run'" library="primary">
 <assign>
 <var>${result}</var>
 </assign>
-<msg timestamp="20191101 11:39:44.091" level="INFO">${result} = === route domain: 0 ===
-BGP router identifier 198.18.96.6, local AS number 65279
-BGP table version is 4
-2 BGP AS-PATH entries
-0 BGP community entries
-
-Neighbor        V    AS MsgRcvd MsgSent   TblVer ...</msg>
-<status status="PASS" starttime="20191101 11:39:40.294" endtime="20191101 11:39:44.091"></status>
-</kw>
-<kw name="Log" library="BuiltIn">
-<doc>Logs the given message with the given level.</doc>
-<arguments>
-<arg>Secondary F5: ${result}</arg>
-</arguments>
-<msg timestamp="20191101 11:39:44.093" level="INFO">Secondary F5: === route domain: 0 ===
-BGP router identifier 198.18.96.6, local AS number 65279
-BGP table version is 4
-2 BGP AS-PATH entries
-0 BGP community entries
-
-Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
-198.18.96.1     4 65179   42222  169237        4    0    0 1d23h02m        1
-198.18.96.2     4 65179   42223  169238        4    0    0 1d23h02m        1
-
-Total number of neighbors 2
-
-</msg>
-<status status="PASS" starttime="20191101 11:39:44.092" endtime="20191101 11:39:44.094"></status>
-</kw>
-<kw name="zebos -c 'show ip bgp summary'" library="primary">
-<assign>
-<var>${result}</var>
-</assign>
-<msg timestamp="20191101 11:39:51.741" level="INFO">${result} = === route domain: 0 ===
-BGP router identifier 198.18.96.5, local AS number 65279
-BGP table version is 53
-2 BGP AS-PATH entries
-0 BGP community entries
-
-Neighbor        V    AS MsgRcvd MsgSent   TblVer...</msg>
-<status status="PASS" starttime="20191101 11:39:44.095" endtime="20191101 11:39:51.741"></status>
+<msg timestamp="20191101 12:02:10.485" level="INFO">${result} = === route domain: 0 ===
+!
+no service password-encryption
+!
+interface lo
+!
+interface tmm
+!
+interface HA
+!
+interface vlan379-private
+!
+interface vlan479-public
+!
+router bgp 65279
+ no bgp default ipv4-un...</msg>
+<status status="PASS" starttime="20191101 12:02:09.296" endtime="20191101 12:02:10.485"></status>
 </kw>
 <kw name="Log" library="BuiltIn">
 <doc>Logs the given message with the given level.</doc>
 <arguments>
 <arg>Primary F5: ${result}</arg>
 </arguments>
-<msg timestamp="20191101 11:39:51.742" level="INFO">Primary F5: === route domain: 0 ===
-BGP router identifier 198.18.96.5, local AS number 65279
-BGP table version is 53
-2 BGP AS-PATH entries
-0 BGP community entries
+<msg timestamp="20191101 12:02:10.487" level="INFO">Primary F5: === route domain: 0 ===
+!
+no service password-encryption
+!
+interface lo
+!
+interface tmm
+!
+interface HA
+!
+interface vlan379-private
+!
+interface vlan479-public
+!
+router bgp 65279
+ no bgp default ipv4-unicast
+ bgp log-neighbor-changes
+ bgp graceful-restart restart-time 120
+ redistribute kernel route-map IPV4-RHI-BGP
+ redistribute connected route-map IPV4-CONNECTED
+ redistribute static route-map IPV4-STATIC
+ neighbor IPV4-NORTHSIDE-PG peer-group
+ neighbor IPV4-NORTHSIDE-PG remote-as 65179
+ neighbor IPV4-NORTHSIDE-PG timers 1 12
+ no neighbor IPV4-NORTHSIDE-PG capability graceful-restart
+ neighbor IPV6-NORTHSIDE-PG peer-group
+ neighbor IPV6-NORTHSIDE-PG remote-as 65179
+ neighbor IPV6-NORTHSIDE-PG timers 1 12
+ no neighbor IPV6-NORTHSIDE-PG capability graceful-restart
+ neighbor 198.18.96.1 peer-group IPV4-NORTHSIDE-PG
+ neighbor 198.18.96.1 activate
+ no neighbor 198.18.96.1 capability graceful-restart
+ neighbor 198.18.96.2 peer-group IPV4-NORTHSIDE-PG
+ neighbor 198.18.96.2 activate
+ no neighbor 198.18.96.2 capability graceful-restart
+ neighbor 2001:200:0:1400::1 peer-group IPV6-NORTHSIDE-PG
+ no neighbor 2001:200:0:1400::1 capability graceful-restart
+ neighbor 2001:200:0:1400::2 peer-group IPV6-NORTHSIDE-PG
+ no neighbor 2001:200:0:1400::2 capability graceful-restart
+ !
+ address-family ipv6
+ redistribute kernel route-map IPV6-RHI-BGP
+ redistribute connected route-map IPV6-CONNECTED
+ redistribute static route-map IPV6-STATIC
+ neighbor IPV6-NORTHSIDE-PG activate
+ neighbor IPV6-NORTHSIDE-PG soft-reconfiguration inbound
+ neighbor IPV6-NORTHSIDE-PG route-map IPV6-INBOUND-ROUTES in
+ neighbor IPV6-NORTHSIDE-PG route-map IPV6-OUTBOUND-ROUTES out
+ no neighbor 198.18.96.1 activate
+ no neighbor 198.18.96.1 capability graceful-restart
+ no neighbor 198.18.96.2 activate
+ no neighbor 198.18.96.2 capability graceful-restart
+ exit-address-family
+!
+bfd gtsm enable
+!
+ip prefix-list IPV4-CONNECTED seq 10 permit 198.18.32.0/24
+ip prefix-list IPV4-DEFAULT seq 10 permit 0.0.0.0/0
+ip prefix-list IPV4-VIRTUALS seq 10 permit 198.18.32.0/24 ge 32
+!
+ipv6 prefix-list IPV6-CONNECTED seq 10 permit 2001:200:0:1200::/64
+ipv6 prefix-list IPV6-DEFAULT seq 10 permit ::/0
+ipv6 prefix-list IPV6-VIRTUALS seq 10 permit 2001:200:0:1200::/64 ge 128
+!
+route-map IPV4-RHI-BGP permit 10
+ match ip address prefix-list IPV4-VIRTUALS
+!
+route-map IPV4-RHI-BGP deny 9999
+!
+route-map IPV4-CONNECTED permit 10
+ match ip address prefix-list IPV4-CONNECTED
+!
+route-map IPV4-CONNECTED deny 9999
+!
+route-map IPV4-STATIC permit 10
+ match ip address prefix-list IPV4-STATICS
+!
+route-map IPV4-STATIC deny 9999
+!
+route-map IPV4-INBOUND-ROUTES permit 10
+ match ip address prefix-list IPV4-DEFAULT
+!
+route-map IPV4-INBOUND-ROUTES deny 9999
+!
+route-map IPV4-OUTBOUND-ROUTES permit 10
+ match ip address prefix-list IPV4-CONNECTED
+!
+route-map IPV4-OUTBOUND-ROUTES permit 20
+ match ip address prefix-list IPV4-VIRTUALS
+!
+route-map IPV4-OUTBOUND-ROUTES permit 30
+ match ip address prefix-list IPV4-STATICS
+!
+route-map IPV4-OUTBOUND-ROUTES deny 9999
+!
+route-map IPV6-RHI-BGP permit 10
+ match ipv6 address prefix-list IPV6-VIRTUALS
+!
+route-map IPV6-RHI-BGP deny 9999
+!
+route-map IPV6-CONNECTED permit 10
+ match ipv6 address prefix-list IPV6-CONNECTED
+!
+route-map IPV6-CONNECTED deny 9999
+!
+route-map IPV6-STATIC permit 10
+ match ipv6 address prefix-list IPV6-STATICS
+!
+route-map IPV6-STATIC deny 9999
+!
+route-map IPV6-INBOUND-ROUTES permit 10
+ match ipv6 address prefix-list IPV6-DEFAULT
+!
+route-map IPV6-INBOUND-ROUTES deny 9999
+!
+route-map IPV6-OUTBOUND-ROUTES permit 10
+ match ipv6 address prefix-list IPV6-CONNECTED
+!
+route-map IPV6-OUTBOUND-ROUTES permit 20
+ match ipv6 address prefix-list IPV6-VIRTUALS
+!
+route-map IPV6-OUTBOUND-ROUTES permit 30
+ match ipv6 address prefix-list IPV6-STATICS
+!
+route-map IPV6-OUTBOUND-ROUTES deny 9999
+!
+line con 0
+ login
+line vty 0 39
+ login
+!
+end
 
-Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
-198.18.96.1     4 65179   63929  256306       53    0    0 2d23h13m        1
-198.18.96.2     4 65179   63928  256293       53    0    0 2d23h13m        1
-
-Total number of neighbors 2
 
 </msg>
-<status status="PASS" starttime="20191101 11:39:51.742" endtime="20191101 11:39:51.742"></status>
+<status status="PASS" starttime="20191101 12:02:10.486" endtime="20191101 12:02:10.487"></status>
 </kw>
-<status status="PASS" starttime="20191101 11:39:40.293" endtime="20191101 11:39:51.742"></status>
-</kw>
-<suite id="s1-s1-s1" name="V4 Routing" source="C:\Users\p2901112\Documents\robots\f5_ltm\BGP\01__v4_routing.robot">
-<test id="s1-s1-s1-t1" name="IPv4 Neighbors Established">
-<kw name="zebos -c 'show bgp neighbors 198.18.96.1 | grep state'" library="F5Rest">
+<kw name="zebos -c 'show run'" library="secondary">
 <assign>
 <var>${result}</var>
 </assign>
-<msg timestamp="20191101 11:39:53.612" level="INFO">${result} = === route domain: 0 ===
-  BGP state = Established, up for 2d23h13m
-
-</msg>
-<status status="PASS" starttime="20191101 11:39:51.756" endtime="20191101 11:39:53.612"></status>
+<msg timestamp="20191101 12:02:11.408" level="INFO">${result} = === route domain: 0 ===
+!
+no service password-encryption
+!
+interface lo
+!
+interface tmm
+!
+interface HA
+!
+interface vlan379-private
+!
+interface vlan479-public
+!
+router bgp 65279
+ no bgp default ipv4-un...</msg>
+<status status="PASS" starttime="20191101 12:02:10.488" endtime="20191101 12:02:11.409"></status>
 </kw>
 <kw name="Log" library="BuiltIn">
 <doc>Logs the given message with the given level.</doc>
 <arguments>
-<arg>${result}</arg>
+<arg>Secondary F5: ${result}</arg>
 </arguments>
-<msg timestamp="20191101 11:39:53.612" level="INFO">=== route domain: 0 ===
-  BGP state = Established, up for 2d23h13m
+<msg timestamp="20191101 12:02:11.411" level="INFO">Secondary F5: === route domain: 0 ===
+!
+no service password-encryption
+!
+interface lo
+!
+interface tmm
+!
+interface HA
+!
+interface vlan379-private
+!
+interface vlan479-public
+!
+router bgp 65279
+ no bgp default ipv4-unicast
+ bgp log-neighbor-changes
+ bgp graceful-restart restart-time 120
+ redistribute kernel route-map IPV4-RHI-BGP
+ redistribute connected route-map IPV4-CONNECTED
+ redistribute static route-map IPV4-STATIC
+ neighbor IPV4-NORTHSIDE-PG peer-group
+ neighbor IPV4-NORTHSIDE-PG remote-as 65179
+ neighbor IPV4-NORTHSIDE-PG timers 1 12
+ no neighbor IPV4-NORTHSIDE-PG capability graceful-restart
+ neighbor IPV6-NORTHSIDE-PG peer-group
+ neighbor IPV6-NORTHSIDE-PG remote-as 65179
+ neighbor IPV6-NORTHSIDE-PG timers 1 12
+ no neighbor IPV6-NORTHSIDE-PG capability graceful-restart
+ neighbor 198.18.96.1 peer-group IPV4-NORTHSIDE-PG
+ neighbor 198.18.96.1 activate
+ no neighbor 198.18.96.1 capability graceful-restart
+ neighbor 198.18.96.2 peer-group IPV4-NORTHSIDE-PG
+ neighbor 198.18.96.2 activate
+ no neighbor 198.18.96.2 capability graceful-restart
+ neighbor 2001:200:0:1400::1 peer-group IPV6-NORTHSIDE-PG
+ no neighbor 2001:200:0:1400::1 capability graceful-restart
+ neighbor 2001:200:0:1400::2 peer-group IPV6-NORTHSIDE-PG
+ no neighbor 2001:200:0:1400::2 capability graceful-restart
+ !
+ address-family ipv6
+ redistribute kernel route-map IPV6-RHI-BGP
+ redistribute connected route-map IPV6-CONNECTED
+ redistribute static route-map IPV6-STATIC
+ neighbor IPV6-NORTHSIDE-PG activate
+ neighbor IPV6-NORTHSIDE-PG soft-reconfiguration inbound
+ neighbor IPV6-NORTHSIDE-PG route-map IPV6-INBOUND-ROUTES in
+ neighbor IPV6-NORTHSIDE-PG route-map IPV6-OUTBOUND-ROUTES out
+ no neighbor 198.18.96.1 activate
+ no neighbor 198.18.96.1 capability graceful-restart
+ no neighbor 198.18.96.2 activate
+ no neighbor 198.18.96.2 capability graceful-restart
+ exit-address-family
+!
+bfd gtsm enable
+!
+ip prefix-list IPV4-CONNECTED seq 10 permit 198.18.32.0/24
+ip prefix-list IPV4-DEFAULT seq 10 permit 0.0.0.0/0
+ip prefix-list IPV4-VIRTUALS seq 10 permit 198.18.32.0/24 ge 32
+!
+ipv6 prefix-list IPV6-CONNECTED seq 10 permit 2001:200:0:1200::/64
+ipv6 prefix-list IPV6-DEFAULT seq 10 permit ::/0
+ipv6 prefix-list IPV6-VIRTUALS seq 10 permit 2001:200:0:1200::/64 ge 128
+!
+route-map IPV4-RHI-BGP permit 10
+ match ip address prefix-list IPV4-VIRTUALS
+!
+route-map IPV4-RHI-BGP deny 9999
+!
+route-map IPV4-CONNECTED permit 10
+ match ip address prefix-list IPV4-CONNECTED
+!
+route-map IPV4-CONNECTED deny 9999
+!
+route-map IPV4-STATIC permit 10
+ match ip address prefix-list IPV4-STATICS
+!
+route-map IPV4-STATIC deny 9999
+!
+route-map IPV4-INBOUND-ROUTES permit 10
+ match ip address prefix-list IPV4-DEFAULT
+!
+route-map IPV4-INBOUND-ROUTES deny 9999
+!
+route-map IPV4-OUTBOUND-ROUTES permit 10
+ match ip address prefix-list IPV4-CONNECTED
+!
+route-map IPV4-OUTBOUND-ROUTES permit 20
+ match ip address prefix-list IPV4-VIRTUALS
+!
+route-map IPV4-OUTBOUND-ROUTES permit 30
+ match ip address prefix-list IPV4-STATICS
+!
+route-map IPV4-OUTBOUND-ROUTES deny 9999
+!
+route-map IPV6-RHI-BGP permit 10
+ match ipv6 address prefix-list IPV6-VIRTUALS
+!
+route-map IPV6-RHI-BGP deny 9999
+!
+route-map IPV6-CONNECTED permit 10
+ match ipv6 address prefix-list IPV6-CONNECTED
+!
+route-map IPV6-CONNECTED deny 9999
+!
+route-map IPV6-STATIC permit 10
+ match ipv6 address prefix-list IPV6-STATICS
+!
+route-map IPV6-STATIC deny 9999
+!
+route-map IPV6-INBOUND-ROUTES permit 10
+ match ipv6 address prefix-list IPV6-DEFAULT
+!
+route-map IPV6-INBOUND-ROUTES deny 9999
+!
+route-map IPV6-OUTBOUND-ROUTES permit 10
+ match ipv6 address prefix-list IPV6-CONNECTED
+!
+route-map IPV6-OUTBOUND-ROUTES permit 20
+ match ipv6 address prefix-list IPV6-VIRTUALS
+!
+route-map IPV6-OUTBOUND-ROUTES permit 30
+ match ipv6 address prefix-list IPV6-STATICS
+!
+route-map IPV6-OUTBOUND-ROUTES deny 9999
+!
+line con 0
+ login
+line vty 0 39
+ login
+!
+end
+
 
 </msg>
-<status status="PASS" starttime="20191101 11:39:53.612" endtime="20191101 11:39:53.613"></status>
+<status status="PASS" starttime="20191101 12:02:11.409" endtime="20191101 12:02:11.413"></status>
+</kw>
+<status status="PASS" starttime="20191101 12:02:09.296" endtime="20191101 12:02:11.413"></status>
+</kw>
+<status status="PASS" starttime="20191101 12:02:09.295" endtime="20191101 12:02:11.414"></status>
+</kw>
+<suite id="s1-s1-s1" name="V4 Routing" source="C:\Users\p2901112\Documents\robots\f5_ltm\BGP\01__v4_routing.robot">
+<test id="s1-s1-s1-t1" name="Neighbors Established">
+<kw name="zebos -c 'show bgp neighbors'" library="F5Rest">
+<assign>
+<var>${result}</var>
+</assign>
+<msg timestamp="20191101 12:02:12.498" level="INFO">${result} = === route domain: 0 ===
+BGP neighbor is 198.18.96.1, remote AS 65179, local AS 65279, external link
+ Member of peer-group IPV4-NORTHSIDE-PG for session parameters
+  BGP version 4, remote router ID 198...</msg>
+<status status="PASS" starttime="20191101 12:02:11.450" endtime="20191101 12:02:12.498"></status>
 </kw>
 <kw name="Should Contain" library="BuiltIn">
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
@@ -117,7 +376,7 @@ Total number of neighbors 2
 <arg>${result}</arg>
 <arg>Established</arg>
 </arguments>
-<status status="PASS" starttime="20191101 11:39:53.613" endtime="20191101 11:39:53.613"></status>
+<status status="PASS" starttime="20191101 12:02:12.499" endtime="20191101 12:02:12.500"></status>
 </kw>
 <kw name="Should Not Contain" library="BuiltIn">
 <doc>Fails if ``container`` contains ``item`` one or more times.</doc>
@@ -125,99 +384,216 @@ Total number of neighbors 2
 <arg>${result}</arg>
 <arg>Active</arg>
 </arguments>
-<status status="PASS" starttime="20191101 11:39:53.614" endtime="20191101 11:39:53.614"></status>
-</kw>
-<doc>Verify IPv4 BGP neighbors.</doc>
-<status status="PASS" starttime="20191101 11:39:51.755" endtime="20191101 11:39:53.615" critical="yes"></status>
-</test>
-<test id="s1-s1-s1-t2" name="IPv6 Neighbors Established">
-<kw name="zebos -c 'show bgp summary'" library="F5Rest">
-<assign>
-<var>${result}</var>
-</assign>
-<msg timestamp="20191101 11:39:53.909" level="INFO">${result} = === route domain: 0 ===
-BGP router identifier 198.18.96.5, local AS number 65279
-BGP table version is 7
-2 BGP AS-PATH entries
-0 BGP community entries
-
-Neighbor        V    AS MsgRcvd MsgSent   TblVer ...</msg>
-<status status="PASS" starttime="20191101 11:39:53.652" endtime="20191101 11:39:53.910"></status>
+<status status="PASS" starttime="20191101 12:02:12.500" endtime="20191101 12:02:12.501"></status>
 </kw>
 <kw name="Log" library="BuiltIn">
 <doc>Logs the given message with the given level.</doc>
 <arguments>
 <arg>${result}</arg>
 </arguments>
-<msg timestamp="20191101 11:39:53.910" level="INFO">=== route domain: 0 ===
-BGP router identifier 198.18.96.5, local AS number 65279
-BGP table version is 7
-2 BGP AS-PATH entries
-0 BGP community entries
+<msg timestamp="20191101 12:02:12.504" level="INFO">=== route domain: 0 ===
+BGP neighbor is 198.18.96.1, remote AS 65179, local AS 65279, external link
+ Member of peer-group IPV4-NORTHSIDE-PG for session parameters
+  BGP version 4, remote router ID 198.18.96.1
+  BGP state = Established, up for 2d23h35m
+  Last read 2d23h35m, hold time is 12, keepalive interval is 1 seconds
+  Configured hold time is 12, keepalive interval is 1 seconds
+  Neighbor capabilities:
+    Dynamic: received
+    Route refresh: advertised and received (old and new)
+    Address family IPv4 Unicast: advertised and received
+  Received 64264 messages, 0 notifications, 0 in queue
+  Sent 257647 messages, 0 notifications, 0 in queue
+  Route refresh request: received 0, sent 0
+  Minimum time between advertisement runs is 30 seconds
+ For address family: IPv4 Unicast
+  BGP table version 55, neighbor version 55
+  Index 2, Offset 0, Mask 0x4
+  IPV4-NORTHSIDE-PG peer-group member
+    Graceful restart: received
+  Community attribute sent to this neighbor (both)
+  1 accepted prefixes
+  0 announced prefixes
 
-Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
-2001:200:0:1400::1 4 65179   63923  256274        7    0    0 2d23h13m        1
-2001:200:0:1400::2 4 65179   63922  256263        7    0    0 2d23h12m        1
+ Connections established 1; dropped 0
+Local host: 198.18.96.5, Local port: 33832
+Foreign host: 198.18.96.1, Foreign port: 179
+Nexthop: 198.18.96.4
+Nexthop global: 2001:200:0:1400::4
+Nexthop local: fe80::20a:49ff:febf:f105
+BGP connection: non shared network
 
-Total number of neighbors 2
+BGP neighbor is 198.18.96.2, remote AS 65179, local AS 65279, external link
+ Member of peer-group IPV4-NORTHSIDE-PG for session parameters
+  BGP version 4, remote router ID 198.18.96.2
+  BGP state = Established, up for 2d23h35m
+  Last read 2d23h35m, hold time is 12, keepalive interval is 1 seconds
+  Configured hold time is 12, keepalive interval is 1 seconds
+  Neighbor capabilities:
+    Dynamic: received
+    Route refresh: advertised and received (old and new)
+    Address family IPv4 Unicast: advertised and received
+  Received 64262 messages, 0 notifications, 0 in queue
+  Sent 257634 messages, 0 notifications, 0 in queue
+  Route refresh request: received 0, sent 0
+  Minimum time between advertisement runs is 30 seconds
+ For address family: IPv4 Unicast
+  BGP table version 55, neighbor version 55
+  Index 4, Offset 0, Mask 0x10
+  IPV4-NORTHSIDE-PG peer-group member
+    Graceful restart: received
+  Community attribute sent to this neighbor (both)
+  1 accepted prefixes
+  1 announced prefixes
+
+ Connections established 1; dropped 0
+Local host: 198.18.96.5, Local port: 55206
+Foreign host: 198.18.96.2, Foreign port: 179
+Nexthop: 198.18.96.4
+Nexthop global: 2001:200:0:1400::4
+Nexthop local: fe80::20a:49ff:febf:f105
+BGP connection: non shared network
+
+BGP neighbor is 2001:200:0:1400::1, remote AS 65179, local AS 65279, external link
+ Member of peer-group IPV6-NORTHSIDE-PG for session parameters
+  BGP version 4, remote router ID 198.18.96.1
+  BGP state = Established, up for 2d23h35m
+  Last read 2d23h35m, hold time is 12, keepalive interval is 1 seconds
+  Configured hold time is 12, keepalive interval is 1 seconds
+  Neighbor capabilities:
+    Dynamic: received
+    Route refresh: advertised and received (old and new)
+    Address family IPv6 Unicast: advertised and received
+  Received 64257 messages, 0 notifications, 0 in queue
+  Sent 257613 messages, 0 notifications, 0 in queue
+  Route refresh request: received 0, sent 0
+  Minimum time between advertisement runs is 30 seconds
+ For address family: IPv6 Unicast
+  BGP table version 7, neighbor version 7
+  Index 2, Offset 0, Mask 0x4
+  IPV6-NORTHSIDE-PG peer-group member
+  AF-dependant capabilities:
+    Graceful restart: advertised, received
+
+  Inbound soft reconfiguration allowed
+  Community attribute sent to this neighbor (both)
+  Inbound path policy configured
+  Outbound path policy configured
+  Route map for incoming advertisements is *IPV6-INBOUND-ROUTES
+  Route map for outgoing advertisements is *IPV6-OUTBOUND-ROUTES
+  1 accepted prefixes
+  0 announced prefixes
+
+ Connections established 1; dropped 0
+ Graceful-restart Status:
+  Remote restart-time is 120 sec
+
+Local host: 2001:200:0:1400::5, Local port: 60462
+Foreign host: 2001:200:0:1400::1, Foreign port: 179
+Nexthop: 198.18.96.4
+Nexthop global: 2001:200:0:1400::4
+Nexthop local: fe80::20a:49ff:febf:f105
+BGP connection: shared network
+
+BGP neighbor is 2001:200:0:1400::2, remote AS 65179, local AS 65279, external link
+ Member of peer-group IPV6-NORTHSIDE-PG for session parameters
+  BGP version 4, remote router ID 198.18.96.2
+  BGP state = Established, up for 2d23h35m
+  Last read 2d23h35m, hold time is 12, keepalive interval is 1 seconds
+  Configured hold time is 12, keepalive interval is 1 seconds
+  Neighbor capabilities:
+    Dynamic: received
+    Route refresh: advertised and received (old and new)
+    Address family IPv6 Unicast: advertised and received
+  Received 64256 messages, 0 notifications, 0 in queue
+  Sent 257602 messages, 0 notifications, 0 in queue
+  Route refresh request: received 0, sent 0
+  Minimum time between advertisement runs is 30 seconds
+ For address family: IPv6 Unicast
+  BGP table version 7, neighbor version 7
+  Index 3, Offset 0, Mask 0x8
+  IPV6-NORTHSIDE-PG peer-group member
+  AF-dependant capabilities:
+    Graceful restart: advertised, received
+
+  Inbound soft reconfiguration allowed
+  Community attribute sent to this neighbor (both)
+  Inbound path policy configured
+  Outbound path policy configured
+  Route map for incoming advertisements is *IPV6-INBOUND-ROUTES
+  Route map for outgoing advertisements is *IPV6-OUTBOUND-ROUTES
+  1 accepted prefixes
+  0 announced prefixes
+
+ Connections established 1; dropped 0
+ Graceful-restart Status:
+  Remote restart-time is 120 sec
+
+Local host: 2001:200:0:1400::5, Local port: 44122
+Foreign host: 2001:200:0:1400::2, Foreign port: 179
+Nexthop: 198.18.96.4
+Nexthop global: 2001:200:0:1400::4
+Nexthop local: fe80::20a:49ff:febf:f105
+BGP connection: shared network
+
 
 </msg>
-<status status="PASS" starttime="20191101 11:39:53.910" endtime="20191101 11:39:53.910"></status>
+<status status="PASS" starttime="20191101 12:02:12.504" endtime="20191101 12:02:12.505"></status>
 </kw>
-<doc>Verify IPv6 BGP neighbors.</doc>
-<status status="PASS" starttime="20191101 11:39:53.651" endtime="20191101 11:39:53.911" critical="yes"></status>
+<doc>Verify BGP neighbors.</doc>
+<status status="PASS" starttime="20191101 12:02:11.449" endtime="20191101 12:02:12.532" critical="yes"></status>
 </test>
-<test id="s1-s1-s1-t3" name="Kernel route advertisement">
+<test id="s1-s1-s1-t2" name="Kernel route advertisement">
 <kw name="Log" library="BuiltIn">
 <doc>Logs the given message with the given level.</doc>
 <arguments>
 <arg>test</arg>
 </arguments>
-<msg timestamp="20191101 11:39:53.912" level="INFO">test</msg>
-<status status="PASS" starttime="20191101 11:39:53.912" endtime="20191101 11:39:53.913"></status>
+<msg timestamp="20191101 12:02:12.535" level="INFO">test</msg>
+<status status="PASS" starttime="20191101 12:02:12.535" endtime="20191101 12:02:12.536"></status>
 </kw>
 <doc>Advertise a kernel route to an upstream peer.</doc>
-<status status="PASS" starttime="20191101 11:39:53.912" endtime="20191101 11:39:53.913" critical="yes"></status>
+<status status="PASS" starttime="20191101 12:02:12.534" endtime="20191101 12:02:12.536" critical="yes"></status>
 </test>
-<test id="s1-s1-s1-t4" name="Prefix list">
+<test id="s1-s1-s1-t3" name="Prefix list">
 <kw name="Log" library="BuiltIn">
 <doc>Logs the given message with the given level.</doc>
 <arguments>
 <arg>test2</arg>
 </arguments>
-<msg timestamp="20191101 11:39:53.915" level="INFO">test2</msg>
-<status status="PASS" starttime="20191101 11:39:53.914" endtime="20191101 11:39:53.915"></status>
+<msg timestamp="20191101 12:02:12.538" level="INFO">test2</msg>
+<status status="PASS" starttime="20191101 12:02:12.538" endtime="20191101 12:02:12.538"></status>
 </kw>
 <doc>Test that a v4 prefix list blocks an advertisement.</doc>
-<status status="PASS" starttime="20191101 11:39:53.914" endtime="20191101 11:39:53.915" critical="yes"></status>
+<status status="PASS" starttime="20191101 12:02:12.537" endtime="20191101 12:02:12.538" critical="yes"></status>
 </test>
-<status status="PASS" starttime="20191101 11:39:51.742" endtime="20191101 11:39:53.917"></status>
+<status status="PASS" starttime="20191101 12:02:11.414" endtime="20191101 12:02:12.539"></status>
 </suite>
 <doc>BGP Routing Protocol Tests</doc>
-<status status="PASS" starttime="20191101 11:39:33.747" endtime="20191101 11:39:53.919"></status>
+<status status="PASS" starttime="20191101 12:02:07.247" endtime="20191101 12:02:12.544"></status>
 </suite>
 <doc>F5 New Code Validation</doc>
-<status status="PASS" starttime="20191101 11:39:33.038" endtime="20191101 11:39:53.921"></status>
+<status status="PASS" starttime="20191101 12:02:06.579" endtime="20191101 12:02:12.547"></status>
 </suite>
 <statistics>
 <total>
-<stat pass="4" fail="0">Critical Tests</stat>
-<stat pass="4" fail="0">All Tests</stat>
+<stat pass="3" fail="0">Critical Tests</stat>
+<stat pass="3" fail="0">All Tests</stat>
 </total>
 <tag>
 </tag>
 <suite>
-<stat pass="4" fail="0" id="s1" name="F5 Ltm">F5 Ltm</stat>
-<stat pass="4" fail="0" id="s1-s1" name="BGP">F5 Ltm.BGP</stat>
-<stat pass="4" fail="0" id="s1-s1-s1" name="V4 Routing">F5 Ltm.BGP.V4 Routing</stat>
+<stat pass="3" fail="0" id="s1" name="F5 Ltm">F5 Ltm</stat>
+<stat pass="3" fail="0" id="s1-s1" name="BGP">F5 Ltm.BGP</stat>
+<stat pass="3" fail="0" id="s1-s1-s1" name="V4 Routing">F5 Ltm.BGP.V4 Routing</stat>
 </suite>
 </statistics>
 <errors>
-<msg timestamp="20191101 11:39:34.274" level="WARN">Importing custom F5 library</msg>
-<msg timestamp="20191101 11:39:34.297" level="WARN">Connecting to F5 10.240.72.161</msg>
-<msg timestamp="20191101 11:39:37.685" level="WARN">Connecting to F5 10.240.72.162</msg>
-<msg timestamp="20191101 11:39:40.295" level="WARN">Connecting to F5 10.240.72.162</msg>
-<msg timestamp="20191101 11:39:44.096" level="WARN">Connecting to F5 10.240.72.161</msg>
-<msg timestamp="20191101 11:39:51.756" level="WARN">Connecting to F5 10.240.72.161</msg>
+<msg timestamp="20191101 12:02:07.744" level="WARN">Importing custom F5 library</msg>
+<msg timestamp="20191101 12:02:07.746" level="WARN">Connecting to F5 10.240.72.161</msg>
+<msg timestamp="20191101 12:02:08.670" level="WARN">Connecting to F5 10.240.72.162</msg>
+<msg timestamp="20191101 12:02:09.296" level="WARN">Connecting to F5 10.240.72.161</msg>
+<msg timestamp="20191101 12:02:10.488" level="WARN">Connecting to F5 10.240.72.162</msg>
+<msg timestamp="20191101 12:02:11.450" level="WARN">Connecting to F5 10.240.72.161</msg>
 </errors>
 </robot>

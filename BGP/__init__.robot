@@ -9,15 +9,21 @@ Suite Setup     Setup F5
 
 *** Keywords ***
 Setup F5
-    [Documentation]     Configure BGP peering.
+    [Documentation]     Setup for the F5 BGP routing tests.
     [tags]  Setup
-    ${result}     secondary.zebos -c 'show ip bgp summary'
-    Log     Secondary F5: ${result}
-    ${result}     primary.zebos -c 'show ip bgp summary'
-    Log     Primary F5: ${result}
     # Router bgp ${as_number}
     # Add v4 peers ${bgp_peers_ipv4}
     # Add v6 peers ${bgp_peers_ipv6}
+    Log Configuration
+
+Log Configuration
+    [Documentation]     Log the running imish configuration from primary
+    ...                 and secondary F5 devices.
+    [tags]  Setup   
+    ${result}       primary.zebos -c 'show run'
+    Log             Primary F5: ${result}
+    ${result}       secondary.zebos -c 'show run'
+    Log             Secondary F5: ${result}
 
 Teardown
     [Documentation]     Teardown the configuration for this test suite.
