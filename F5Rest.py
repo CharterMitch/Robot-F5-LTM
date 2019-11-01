@@ -4,7 +4,7 @@ from robot.utils import ConnectionCache
 
 from f5.bigip import ManagementRoot
 
-logger.warn("Importing F5 REST library")
+#logger.warn("Importing F5 REST library")
 
 class F5Rest():
 
