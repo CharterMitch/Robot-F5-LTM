@@ -13,8 +13,24 @@ Setup F5
     [tags]  Setup
     # Router bgp ${as_number}
     # Add v4 peers ${bgp_peers_ipv4}
-    # Add v6 peers ${bgp_peers_ipv6}
+    Add v4 peers
     Log Configuration
+
+Add v4 peers
+    [Documentation]     Add IPv4 Peers to the ZebOS Configuration
+    :for    ${neighbor}     IN  @{v4_peers}
+    \   primary.imish -c 'enable','conf t','router bgp ${asn}','neighbor ${neighbor} peer-group ${v4_peer_group}'
+    \   primary.imish -c 'enable','conf t','router bgp ${asn}','address-family ipv4','neighbor ${neighbor} activate'
+    \   secondary.imish -c 'enable','conf t','router bgp ${asn}','neighbor ${neighbor} peer-group ${v4_peer_group}'
+    \   secondary.imish -c 'enable','conf t','router bgp ${asn}','address-family ipv4','neighbor ${neighbor} activate'
+
+Add v6 peers
+    [Documentation]     Add IPv6 Peers to the ZebOS Configuration
+    :for    ${neighbor}     IN  @{v6_peers}
+    \   primary.imish -c 'enable','conf t','router bgp ${asn}','neighbor ${neighbor} peer-group ${v6_peer_group}'
+    \   primary.imish -c 'enable','conf t','router bgp ${asn}','address-family ipv6','neighbor ${neighbor} activate'
+    \   secondary.imish -c 'enable','conf t','router bgp ${asn}','neighbor ${neighbor} peer-group ${v6_peer_group}'
+    \   secondary.imish -c 'enable','conf t','router bgp ${asn}','address-family ipv6','neighbor ${neighbor} activate'
 
 Log Configuration
     [Documentation]     Log the running imish configuration from primary
