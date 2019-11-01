@@ -30,6 +30,7 @@ class F5Rest():
 
     @keyword('imish -r ${route_domain} -c ${commands}')
     def imish_rd(self,commands,route_domain):
+        ''' Enter commands in a route domain. '''
         command_list = str(commands).strip('[]')  # Allows lists as well as strings?
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
         return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult

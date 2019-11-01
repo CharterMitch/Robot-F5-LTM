@@ -1,5 +1,7 @@
-as_number: 65279
+asn: 65279
 bgp_peers_v4: ['198.18.96.1','198.18.96.2']
 bgp_peers_v6: ['2001:200:0:1400::1','2001:200:0:1400::2']
 v4_static:    '198.18.32.0/24'
 v6_static:    '2001:200:0:1200::/64'
+v4_peer_group: 'IPV4-NORTHSIDE-PG'
+v6_peer_group: 'IPV6-NORTHSIDE-PG'

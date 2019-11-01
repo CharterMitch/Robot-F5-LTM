@@ -26,7 +26,7 @@ V4 Static Route
     Should contain      ${result}   Known via "static"
     ${result}           imish -c 'show ip bgp ${v4_static}'
     # Advertised to peer groups: output should have our IPV4 peer group listed
-    Should contain      ${result}   IPV4-NORTHSIDE-PG
+    Should contain      ${result}   ${v4_peer_group}
     Log                 ${result}
     imish -c 'enable','conf t','no ip route ${v4_static} null'
 
@@ -39,7 +39,7 @@ V6 Static Route
     Should contain      ${result}   Known via "static"
     ${result}           imish -c 'show bgp ${v6_static}'
     # Advertised to peer groups: output should have our IPV4 peer group listed
-    Should contain      ${result}   IPV6-NORTHSIDE-PG
+    Should contain      ${result}   ${v6_peer_group}
     Log                 ${result}
     imish -c 'enable','conf t','no ipv6 route ${v6_static} null'
 
