@@ -20,7 +20,8 @@ V6 Default Route
 V4 Static Route
     [Documentation]     Verify V4 static route is advertised.
     imish -c 'enable','conf t','ip route ${v4_static} null'
-    Sleep               3
+    # Wait                          Wait for    Retry every     Commmand
+    Wait until keyword succeeds     30 sec      2 sec           v4 route exists  ${v4_static} 
     ${result}           imish -c 'show ip route ${v4_static}'
     Should contain      ${result}   Known via "static"
     ${result}           imish -c 'show ip bgp ${v4_static}'
@@ -32,11 +33,26 @@ V4 Static Route
 V6 Static Route
     [Documentation]     Verify V6 static route is advertised.
     imish -c 'enable','conf t','ipv6 route ${v6_static} null'
-    Sleep               3
-    ${result}           imish -c 'show ip route ${v6_static}'
+    # Wait                          Wait for    Retry every     Commmand
+    Wait until keyword succeeds     30 sec      2 sec           v6 route exists  ${v6_static} 
+    ${result}           imish -c 'show ipv6 route ${v6_static}'
     Should contain      ${result}   Known via "static"
-    ${result}           imish -c 'show ip bgp ${v6_static}'
+    ${result}           imish -c 'show bgp ${v6_static}'
     # Advertised to peer groups: output should have our IPV4 peer group listed
-    Should contain      ${result}   IPV4-NORTHSIDE-PG
+    Should contain      ${result}   IPV6-NORTHSIDE-PG
     Log                 ${result}
     imish -c 'enable','conf t','no ipv6 route ${v6_static} null'
+
+
+*** Keywords ***
+v4 route exists
+    [Documentation]     Verify a route is in the routing table.
+    [Arguments]         ${route}
+    ${result}           imish -c 'show ip route ${route}'
+    Should contain      ${result}   Routing entry
+
+v6 route exists
+    [Documentation]     Verify a route is in the routing table.
+    [Arguments]         ${route}
+    ${result}           imish -c 'show ipv6 route ${route}'
+    Should contain      ${result}   Routing entry
