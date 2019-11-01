@@ -7,11 +7,8 @@ Library     ../F5Rest.py  ${f5_a}   ${user}
 *** Test Cases ***
 Neighbors Established
     [Documentation]     Verify BGP neighbors are all established.
-    Wait until keyword succeeds     1 min  0 sec    Neighbors Established
+    Wait until keyword succeeds     1 min  5 sec    Neighbors Established
     ${result}           imish -c 'show bgp neighbors'
-    Should contain      ${result}    Established
-    Should not contain  ${result}    Active
-    Should not contain  ${result}    Idle
     Log                 ${result}   
 
 Shutdown V4 Neighbor
@@ -52,7 +49,9 @@ No Shutdown V6 Neighbor
 
 *** Keywords ***
 Neighbors Established
-    [Documentation]     Verify at least one BGP neighbor is established.
+    [Documentation]     Verify all BGP neighbors in the established state.
     ${result}           imish -c 'show bgp neighbors'
     Should contain      ${result}    Established
-    Sleep               5
+    Should not contain  ${result}    Active
+    Should not contain  ${result}    Open
+    Should not contain  ${result}    Idle
