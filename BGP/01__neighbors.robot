@@ -4,10 +4,6 @@ Resource    ../common.resource
 Variables   settings.yaml
 Library     ../F5Rest.py  ${f5_a}   ${user}
 
-*** Variables ***
-# What variables should we declare directly in the test?
-${kernel_route}     198.18.32.1
-
 *** Test Cases ***
 Neighbors Established
     [Documentation]     Verify BGP neighbors are all established.
