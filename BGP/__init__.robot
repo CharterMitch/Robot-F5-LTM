@@ -11,9 +11,9 @@ Suite Setup     Setup F5
 Setup F5
     [Documentation]     Setup for the F5 BGP routing tests.
     [tags]  Setup
-    # Router bgp ${as_number}
-    # Add v4 peers ${bgp_peers_ipv4}
-    Add v4 peers
+    # ZebOS config is pushed in suite setup
+    #Add v4 peers
+    #Add v6 peers
     Log Configuration
 
 Add v4 peers
@@ -44,5 +44,4 @@ Log Configuration
 Teardown
     [Documentation]     Teardown the configuration for this test suite.
     [tags]  Teardown
-    # No router bgp ${as_number}
-    Log     'Not implemented.'
+    No Operation
