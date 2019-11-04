@@ -97,6 +97,14 @@ class F5Rest():
         except LazyAttributesRequired:
             return True
 
+    @keyword('get pool ${pool}')
+    def get_pool(self,pool):
+        return self.mgmt.tm.ltm.pools.pool.load(partition='Common', name=pool)
+
+    @keyword('get pool ${pool} in partition ${partition}')
+    def get_pool_in_partition(self,pool,partition):
+        return self.mgmt.tm.ltm.pools.pool.load(partition=partition, name=pool)
+
     @keyword('get pool ${pool} stats')
     def get_pool_stats(self,pool):
         ''' HTTP GET an F5 pool by name in the /Common partition.

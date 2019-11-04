@@ -20,7 +20,7 @@ V4 SSL Offload
 
 V6 SSL Offload
     Reset Statistics
-    Log Statistics
+    Log v6 Statistics
     ${result} =     tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 should be at 0 connections
     Should Match Regexp     ${result}   Version 1.2.+0\n
