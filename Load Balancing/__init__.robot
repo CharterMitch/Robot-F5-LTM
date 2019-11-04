@@ -4,7 +4,7 @@ Resource        ../common.resource
 Library         ../F5.py
 Variables       settings.yaml
 Suite Setup     Setup F5
-#Suite Teardown  Teardown
+Suite Teardown  Teardown
 
 *** Keywords ***
 Setup F5
