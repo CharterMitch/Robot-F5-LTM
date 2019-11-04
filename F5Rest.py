@@ -35,7 +35,7 @@ class F5Rest():
             for line in fp:
                 if '#' not in line and len(line) > 4:
                     #logger.warn("Sending command {}".format(line))
-                    cmd = "-c '{}'".format(line)
+                    cmd = "-c '{}'".format(line.rstrip())
                     result = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
                     try:
                         if 'Error' in result.commandResult:
@@ -49,8 +49,12 @@ class F5Rest():
         file = str(Path(__file__).parent.absolute()) + "\\" + file
         with open(file,'r') as fp:
             for line in fp:
-                if '!' not in line:
-                    self.imish(line)
+                if '!' not in line and len(line)>4:
+                    if ',' in line:
+                        cmd = ['enable', 'conf t'] + line.rstrip().split(',')
+                    else:
+                        cmd = ['enable','conf t'] + [line.rstrip()]
+                    self.imish(cmd)
 
     @keyword('tmsh ${command:.+}')
     def tmsh(self,command):

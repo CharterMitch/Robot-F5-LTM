@@ -1,5 +1,6 @@
 default_config: False
 send_base_config: False
+send_imish_config: True
 # Primary F5
 f5_primary:
   host: 10.240.72.161

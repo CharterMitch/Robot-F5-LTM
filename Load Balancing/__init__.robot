@@ -3,7 +3,7 @@ Documentation    Load Balancing method tests
 Resource        ../common.resource
 Library         ../F5.py
 Variables       settings.yaml
-#Suite Setup     Setup F5
+Suite Setup     Setup F5
 #Suite Teardown  Teardown
 
 *** Keywords ***
@@ -13,8 +13,6 @@ Setup F5
     [tags]  Setup
     # Run all tmsh commands from f5.tmsh
     Connect To F5   ${f5_primary}     ${user}
-    Default configuration
-    Load tmsh   f5.tmsh
     Create nodes ${nodes}
     Create pool ${pool} using ${nodes} and port 80
     Create http virtual server ${virtual_server} ip ${virtual_server} pool ${pool} port 80

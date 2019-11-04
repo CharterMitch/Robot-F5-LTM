@@ -16,10 +16,11 @@ Setup lab
     [Documentation]     Configure the lab topology for all of the test cases.
     ...                 This requires the F5s to be previously licensed.
     Run Keyword If  '${default_config}'=='True'     Default configurations
-    Run Keyword If  '${send_base_config}'=='True'   Configure F5s
+    Run Keyword If  '${send_base_config}'=='True'   Load Base Config
+    Run Keyword If  '${send_imish_config}'=='True'  Load imish Config
     #Setup Polatis
 
-Configure F5s
+Load Base Config
     [Documentation]     Configure the F5 physical devices, links, ip addresses.
     [tags]  Setup
     # Default device configurations if settings.yaml is set to True
@@ -29,6 +30,9 @@ Configure F5s
     primary.tmsh save /sys config
     secondary.load tmsh ${secondary_config_file}
     secondary.tmsh save /sys config
+
+Load imish Config  
+    [Documentation]     Load ZebOS configuration from a local file.
     Log     Send imish commands from ${imish_config_file}    WARN
     primary.load imish ${imish_config_file}
     secondary.load imish ${imish_config_file}
