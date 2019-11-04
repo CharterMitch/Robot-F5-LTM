@@ -1,33 +1,37 @@
 *** Settings ***
 Documentation   F5 New Code Validation
 Resource        common.resource
+Library         F5Rest.py  ${f5_primary}     ${user}     WITH NAME  primary
+Library         F5Rest.py  ${f5_secondary}   ${user}     WITH NAME  secondary
 Suite Setup     Setup lab
-#Suite Teardown  Teardown virtual server
+Suite Teardown  Teardown lab
 
 *** Variables ***
-${software_version}     13.1.3
+${primary_config_file}      f5_primary.tmsh
+${secondary_config_file}    f5_secondary.tmsh
+${imish_config_file}        imish.config
 
 *** Keywords ***
 Setup lab
     [Documentation]     Configure the lab topology for all of the test cases.
     ...                 This requires the F5s to be previously licensed.
-    Log     ${software_version}
-    #Setup F5 physicals
+    Run Keyword If  '${default_config}'=='True'     Default configurations
+    Run Keyword If  '${send_base_config}'=='True'   Configure F5s
     #Setup Polatis
 
-Setup F5 physicals
+Configure F5s
     [Documentation]     Configure the F5 physical devices, links, ip addresses.
-    ...                 May or may not use a single UCS file?
     [tags]  Setup
-    # Setup Primary F5
-    #Connect To F5   ${f5_a}     ${USER}
-    # Initial configuration
-    # How can we build a yaml configuration hierarchy for the F5s basic configuration?
-    # Use a .ucs file for the basic configuration?
-    # Copy .ucs file to the primary f5
-    # Copy .ucs file to secondary f5
-    # Load ucs files to the f5s
-    Log     Placeholder for F5 UCS configuration.
+    # Default device configurations if settings.yaml is set to True
+    Log     Sending TMSH commands to configure F5s  WARN
+    # Load base config tmsh commands from local file
+    primary.load tmsh ${primary_config_file}
+    primary.tmsh save /sys config
+    secondary.load tmsh ${secondary_config_file}
+    secondary.tmsh save /sys config
+    Log     Send imish commands from ${imish_config_file}    WARN
+    primary.load imish ${imish_config_file}
+    secondary.load imish ${imish_config_file}
 
 Setup Polatis
     [Documentation]     Configure the Polatis optical switch to configure 
@@ -39,3 +43,18 @@ Setup Polatis
     # Connect IXIA 11/2 to the nxs05sqsccc 4/1 port
     Cross-connect polatis port 4 to 324
     Cross-connect polatis port 196 to 132
+
+Default configurations
+    [Documentation]     Default the F5 configurations to factory default.
+    Log  Defaulting F5 Configurations!!! WARN
+    primary.tmsh load /sys config default
+    Sleep   15
+    secondary.tmsh load /sys config default
+    Sleep   15
+
+Teardown Lab
+    [Documentation]     Default the configurations.
+    #primary.tmsh load /sys config default
+    #secondary.tmsh load /sys config default
+    No Operation
+    

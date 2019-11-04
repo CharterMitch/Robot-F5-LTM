@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from robot.api.deco import keyword
 from robot.api import logger
 from robot.utils import ConnectionCache
 
 from f5.bigip import ManagementRoot
 from f5.utils.responses.handlers import Stats
+from f5.sdk_exception import LazyAttributesRequired
 
 #logger.warn("Importing F5 REST library")
 
@@ -23,13 +26,44 @@ class F5Rest():
         except:
             AssertionError("Unable to connect to F5 REST API. Check settings.yaml.")
 
+    @keyword('load tmsh ${file}')
+    def load_tmsh(self,file):
+        # Base config is located in this same directory
+        # Not linux compatible?
+        file = str(Path(__file__).parent.absolute()) + "\\" + file
+        with open(file,'r') as fp:
+            for line in fp:
+                if '#' not in line and len(line) > 4:
+                    #logger.warn("Sending command {}".format(line))
+                    cmd = "-c '{}'".format(line)
+                    result = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+                    try:
+                        if 'Error' in result.commandResult:
+                            logger.warn(cmd)
+                            logger.warn(result.commandResult)
+                    except:
+                        pass
+
+    @keyword('load imish ${file}')
+    def load_imish(self,file):
+        file = str(Path(__file__).parent.absolute()) + "\\" + file
+        with open(file,'r') as fp:
+            for line in fp:
+                if '!' not in line:
+                    self.imish(line)
+
     @keyword('tmsh ${command:.+}')
     def tmsh(self,command):
         ''' Run a tmsh command on an F5 BIG-IP device.
             Return any output from the command.
         '''
-        cmd = '-c "tmsh {}"'.format(command)
-        return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
+        cmd = str("-c 'tmsh {}'".format(command))
+        command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+        try:
+            # Return any output
+            return command.commandResult
+        except LazyAttributesRequired:
+            return True
 
     @keyword('imish -c ${commands}')
     def imish(self,commands,route_domain=0):
@@ -38,7 +72,12 @@ class F5Rest():
         '''
         command_list = str(commands).strip('[]') # Allows lists as well as strings?
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
-        return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
+        command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+        try:
+            # Return any output
+            return command.commandResult
+        except LazyAttributesRequired:
+            return True
 
     @keyword('imish -r ${route_domain} -c ${commands}')
     def imish_rd(self,commands,route_domain):
@@ -47,7 +86,12 @@ class F5Rest():
         '''
         command_list = str(commands).strip('[]')  # Allows lists as well as strings?
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
-        return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
+        command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+        try:
+            # Return any output
+            return command.commandResult
+        except LazyAttributesRequired:
+            return True
 
     @keyword('get pool ${pool} stats')
     def get_pool_stats(self,pool):
@@ -95,3 +139,9 @@ class F5Rest():
             stats.update(dict_)
         return stats
 
+    @keyword('get ssl profile ${profile} stats')
+    def get_ssl_profile_stats(self,profile):
+        # NOT IMPLEMENTED
+         client_ssls = mgmt.tm.ltm.profile.client_ssls.get_collection()
+         client_ssls[0].raw
+         raise AssertionError('Not implemented.')

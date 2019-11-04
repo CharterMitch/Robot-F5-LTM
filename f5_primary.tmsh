@@ -1,0 +1,38 @@
+# Basic config
+tmsh modify sys global-settings hostname robot-f501.charterlab.com gui-setup disabled
+tmsh modify auth password-policy policy-enforcement disabled
+tmsh modify sys db connection.vlankeyed value disable
+
+# Provision AFM and LTM
+tmsh modify sys provision afm { level nominal }
+tmsh modify sys provision ltm { level nominal }
+
+# Configure interfaces
+tmsh modify net interface 2.1 { lldp-admin txrx lldp-tlvmap 114536  }
+tmsh modify net interface 2.2 { lldp-admin txrx lldp-tlvmap 114536 }
+tmsh create net trunk HA_trunk
+tmsh modify net trunk HA_trunk interfaces add { 1.1 1.2 } lacp enabled lacp-timeout short
+tmsh create net trunk UplinkTrunk
+tmsh modify net trunk UplinkTrunk interfaces add { 2.1 2.2 } lacp enabled lacp-timeout short
+
+# Configure VLANs
+tmsh create net vlan HA { interfaces replace-all-with { HA_trunk { tag-mode service tagged } } tag 4094 }
+tmsh create net vlan vlan379-private { interfaces replace-all-with { UplinkTrunk { tag-mode service tagged } } tag 379 }
+tmsh create net vlan vlan479-public { interfaces replace-all-with  { UplinkTrunk { tag-mode service tagged } } tag 479 }
+
+# Create self IPs
+tmsh create net self HA-Network { address 10.0.0.1/30 allow-service all traffic-group traffic-group-local-only vlan HA }
+tmsh create net self Underlay4-Inside-Self { address 198.18.64.7/19 traffic-group traffic-group-local-only vlan vlan379-private }
+tmsh create net self Frontend6-Outside-Self { address 2001:200:0:1400::5/56 traffic-group traffic-group-local-only vlan vlan479-public }
+tmsh create net self Underlay6-Inside-Self { address 2001:200:0:1300::7/56 traffic-group traffic-group-local-only vlan vlan379-private }
+tmsh create net self Frontend4-Outside-Self { address 198.18.96.5/20 traffic-group traffic-group-local-only vlan vlan479-public }
+tmsh create net self Underlay4-Inside { address 198.18.64.6/19 traffic-group traffic-group-1 vlan vlan379-private }
+tmsh create net self Underlay6-Inside { address 2001:200:0:1300::6/56 traffic-group traffic-group-1 vlan vlan379-private }
+tmsh create net self Frontend6-Outside { address 2001:200:0:1400::4/56 traffic-group traffic-group-1 vlan vlan479-public }
+tmsh create net self Frontend4-Outside { address 198.18.96.4/20 traffic-group traffic-group-1 vlan vlan479-public }
+
+tmsh modify net route-domain 0 routing-protocol replace-all-with { BGP BFD } vlans replace-all-with { http-tunnel socks-tunnel HA vlan379-private vlan479-public }
+
+tmsh create sys management-ip 10.240.72.161/22 { }
+tmsh modify sys ntp servers replace-all-with { 10.240.72.125 } timezone America/Denver
+tmsh modify sys state-mirroring { addr 10.0.0.1 secondary-addr 198.18.96.5 }

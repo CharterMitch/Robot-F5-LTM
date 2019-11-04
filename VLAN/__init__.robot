@@ -1,9 +1,7 @@
 *** Settings ***
-Documentation    BGP Routing Protocol Tests
+Documentation    VLAN Testing
 Resource        ../common.resource
-Library         ../F5Rest.py  ${f5_a}   ${user}     WITH NAME  primary
-Library         ../F5Rest.py  ${f5_b}   ${user}     WITH NAME  secondary
-Variables       settings.yaml
+
 #Suite Setup     Setup F5
 #Suite Teardown  Teardown
 

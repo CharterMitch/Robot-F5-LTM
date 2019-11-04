@@ -1,6 +1,6 @@
 *** Settings ***
 Resource    ../common.resource
-Library     ../F5Rest.py    ${f5_a}   ${user}
+Library     ../F5Rest.py    ${f5_primary}   ${user}
 Variables   settings.yaml
 
 *** Test Cases ***
@@ -34,13 +34,13 @@ V6 SSL Offload
 *** Keywords ***
 Reset Statistics
     [Documentation]     Reset various statistics on the F5.
-    tmsh reset-stats ltm virtual
+    ${test} =   tmsh reset-stats ltm virtual
     tmsh reset-stats ltm pool
     tmsh reset-stats ltm profile client-ssl clientssl
 
 Log v4 Statistics
     [Documentation]     Log statistics.
-    ${v1}=  tmsh show ltm pool ${v4_pool}
+    ${v1}=  tmsh show ltm pool ${pool}
     ${v2}=  tmsh show ltm virtual ${virtual_server}
     ${v3}=  tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     Log Many    ${v1}   ${v2}   ${v3}
@@ -48,6 +48,6 @@ Log v4 Statistics
 Log v6 Statistics
     [Documentation]     Log statistics.
     ${v1}=  tmsh show ltm pool ${v6_pool}
-    ${v2}=  tmsh show ltm virtual ${v4_virtual_server}
+    ${v2}=  tmsh show ltm virtual ${v6_virtual_server}
     ${v3}=  tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     Log Many    ${v1}   ${v2}   ${v3}

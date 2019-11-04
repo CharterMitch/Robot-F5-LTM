@@ -1,6 +1,10 @@
-f5_a:
+default_config: False
+send_base_config: False
+# Primary F5
+f5_primary:
   host: 10.240.72.161
-f5_b:
+# Secondary F5
+f5_secondary:
   host: 10.240.72.162
 user:
   username: admin

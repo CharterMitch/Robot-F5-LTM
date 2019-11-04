@@ -12,7 +12,9 @@ Setup F5
     ...                 load balancing test cases.
     [tags]  Setup
     # Run all tmsh commands from f5.tmsh
-    Connect To F5   ${f5_a}     ${user}
+    Connect To F5   ${f5_primary}     ${user}
+    Default configuration
+    Load tmsh   f5.tmsh
     Create nodes ${nodes}
     Create pool ${pool} using ${nodes} and port 80
     Create http virtual server ${virtual_server} ip ${virtual_server} pool ${pool} port 80
