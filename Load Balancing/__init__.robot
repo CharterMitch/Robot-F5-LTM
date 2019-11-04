@@ -3,14 +3,15 @@ Documentation    Load Balancing method tests
 Resource        ../common.resource
 Library         ../F5.py
 Variables       settings.yaml
-Suite Setup     Setup F5
-Suite Teardown  Teardown
+#Suite Setup     Setup F5
+#Suite Teardown  Teardown
 
 *** Keywords ***
 Setup F5
     [Documentation]     Setup a basic http virtual server to use in 
     ...                 load balancing test cases.
     [tags]  Setup
+    # Run all tmsh commands from f5.tmsh
     Connect To F5   ${f5_a}     ${user}
     Create nodes ${nodes}
     Create pool ${pool} using ${nodes} and port 80

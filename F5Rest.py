@@ -22,6 +22,11 @@ class F5Rest():
         except:
             AssertionError("Unable to connect to F5 REST API. Check settings.yaml.")
 
+    @keyword('tmsh ${command:.+}')
+    def tmsh(self,command):
+        cmd = '-c "tmsh {}"'.format(command)
+        return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
+
     @keyword('imish -c ${commands}')
     def imish(self,commands,route_domain=0):
         command_list = str(commands).strip('[]') # Allows lists as well as strings?
