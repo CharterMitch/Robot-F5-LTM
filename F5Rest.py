@@ -101,11 +101,11 @@ class F5Rest():
     def get_pool(self,pool):
         return self.mgmt.tm.ltm.pools.pool.load(partition='Common', name=pool)
 
-    @keyword('get pool ${pool} in partition ${partition}')
+    @keyword('get partition ${partition} pool ${pool}')
     def get_pool_in_partition(self,pool,partition):
         return self.mgmt.tm.ltm.pools.pool.load(partition=partition, name=pool)
 
-    @keyword('get pool ${pool} stats')
+    @keyword('get stats for pool ${pool}')
     def get_pool_stats(self,pool):
         ''' HTTP GET an F5 pool by name in the /Common partition.
             Then load the pool members statistics and return them
@@ -157,3 +157,13 @@ class F5Rest():
          client_ssls = mgmt.tm.ltm.profile.client_ssls.get_collection()
          client_ssls[0].raw
          raise AssertionError('Not implemented.')
+
+    @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')
+    def get_percent(self, num1, num2):
+        ''' Get the difference between two numbers as a percent. '''
+        num1 = int(num1)
+        num2 = int(num2)
+        if int(num1) == num2:
+            return 0
+        if num1 != 0 and num2 != 0:
+            return (abs(num1 - num2) / max(num1,num2)) * 100.0
