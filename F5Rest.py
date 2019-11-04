@@ -25,26 +25,35 @@ class F5Rest():
 
     @keyword('tmsh ${command:.+}')
     def tmsh(self,command):
+        ''' Run a tmsh command on an F5 BIG-IP device.
+            Return any output from the command.
+        '''
         cmd = '-c "tmsh {}"'.format(command)
         return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
 
     @keyword('imish -c ${commands}')
     def imish(self,commands,route_domain=0):
+        ''' Run a zebos / "imish" command on an F5 BIG-IP device.
+            Return any output from the command.
+        '''
         command_list = str(commands).strip('[]') # Allows lists as well as strings?
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
         return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
 
     @keyword('imish -r ${route_domain} -c ${commands}')
     def imish_rd(self,commands,route_domain):
-        ''' Enter commands in a route domain. '''
+        ''' Run a zebos / "imish" command in a route partition an F5 BIG-IP device.
+            Return any output from the command.
+        '''
         command_list = str(commands).strip('[]')  # Allows lists as well as strings?
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
         return self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd).commandResult
 
     @keyword('get pool ${pool} stats')
     def get_pool_stats(self,pool):
-        ''' HTTP GET a pool and its members. Load the member statistics
-            and return them in a dictionary.
+        ''' HTTP GET an F5 pool by name in the /Common partition.
+            Then load the pool members statistics and return them
+            as a dictionary object.
 
             {'/Common/example-server': {
                 'addr': {'description': '2001:200:0:1300::100'},
