@@ -53,6 +53,7 @@ class Ixia():
                                     "YAML for device '{d}'".\
                                     format(k=key, d='ixia'))
 
+
     def isconnected(func):
         '''Decorator to make sure session to device is active
             There is limitation on the amount of time the session can be active
