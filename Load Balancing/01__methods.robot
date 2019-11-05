@@ -23,6 +23,7 @@ Round Robin
     Should be true          ${total_requests_1}>0
     Should be true          ${total_requests_2}>0
     Log                     Round Robin connection difference is ${diff}
+    Log v4 Statistics
 
 Member Ratio
     [Documentation]     Connections are sent to a member with a high ratio 
@@ -47,7 +48,21 @@ Member Ratio
     Should be true          ${total_requests_1}>0
     Should be true          ${total_requests_2}>0
     Log     Member ratio connection difference is ${diff}
+    Log v4 Statistics
 
 Fastest App Response
     # Can the IXIA setup two HTTP server and add 100ms of delay to the second?
     No Operation
+
+*** Keywords ***
+Log v4 Statistics
+    [Documentation]     Log statistics.
+    ${v1}=      tmsh show ltm pool ${pool}
+    ${v2}=      tmsh show ltm virtual ${virtual_server}
+    Log Many    ${v1}   ${v2}
+
+Log v6 Statistics
+    [Documentation]     Log statistics.
+    ${v1}=      tmsh show ltm pool ${v6_pool}
+    ${v2}=      tmsh show ltm virtual ${v6_virtual_server}
+    Log Many    ${v1}   ${v2}
