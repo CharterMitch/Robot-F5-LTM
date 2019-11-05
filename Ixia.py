@@ -1,4 +1,5 @@
 # https://github.com/CiscoTestAutomation/genietrafficgen/blob/master/src/genie/trafficgen/ixianative.py
+
 # Python
 import re
 import os
@@ -8,6 +9,7 @@ import logging
 from shutil import copyfile
 from prettytable import PrettyTable, from_csv
 
+# Robot
 from robot.api import logger
 
 # IxNetwork Native
@@ -25,8 +27,6 @@ class Ixia():
 
         ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
-        super().__init__(*args, **kwargs)
-
         # Init class variables
         self.ixNet = IxNet()
         self._is_connected = False
@@ -43,22 +43,15 @@ class Ixia():
             'rfc2544back2back'
             ]
 
-        # Get Ixia device arguments from testbed YAML file
-        for key in ['ixnetwork_api_server_ip', 'ixnetwork_tcl_port',
-                    'ixia_port_list', 'ixnetwork_version', 'ixia_chassis_ip',
-                    'ixia_license_server_ip']:
-            # Verify Ixia ports provided are a list
-            if key is 'ixia_port_list':
-                if not isinstance(self.connection_info[key], list):
-                    logger.error("Attribute '{}' is not a list as expected".\
-                                format(key))
+        # Make sure all variables are included in initialization
+        for key in ['api_server_ip','tcl_port','port_list','name',
+                    'ixnetwork_version','chassis_ip','license_server_ip']:
             try:
-                setattr(self, key, self.connection_info[key])
+                setattr(self, key, kwargs.get(key))
             except Exception:
                 raise AssertionError("Argument '{k}' is not found in testbed "
                                     "YAML for device '{d}'".\
-                                    format(k=key, d=self.device.name))
-
+                                    format(k=key, d='ixia'))
 
     def isconnected(func):
         '''Decorator to make sure session to device is active
@@ -90,7 +83,7 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Failed to connect to device '{d}' on port "
-                                "'{p}'".format(d=self.device.name,
+                                "'{p}'".format(d=self.name,
                                             p=self.ixnetwork_tcl_port)) from e
         # Verify return
         try:
@@ -98,12 +91,12 @@ class Ixia():
         except AssertionError as e:
             logger.error(connect)
             raise AssertionError("Failed to connect to device '{d}' on port "
-                                "'{p}'".format(d=self.device.name,
+                                "'{p}'".format(d=self.name,
                                             p=self.ixnetwork_tcl_port)) from e
         else:
             self._is_connected = True
             logger.info("Connected to IxNetwork API server on TCL port '{p}'".\
-                        format(d=self.device.name, p=self.ixnetwork_tcl_port))
+                        format(d=self.name, p=self.ixnetwork_tcl_port))
 
 
     def disconnect(self):
@@ -115,7 +108,7 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to disconnect from '{}".\
-                                format(self.device.name))
+                                format(self.name))
 
         # Verify return
         try:
@@ -123,24 +116,24 @@ class Ixia():
         except AssertionError as e:
             logger.error(disconnect)
             raise AssertionError("Unable to disconnect from '{}'".\
-                                format(self.device.name))
+                                format(self.name))
         else:
             self._is_connected = False
             logger.info("Disconnected from IxNetwork API server on TCL port '{p}'".\
-                        format(d=self.device.name, p=self.ixnetwork_tcl_port))
+                        format(d=self.name, p=self.ixnetwork_tcl_port))
 
 
     @isconnected
     def load_configuration(self, configuration, wait_time=60):
         '''Load static configuration file onto Ixia'''
-        logger.info("Loading configuration"))
+        logger.info("Loading configuration")
         try:
             load_config = self.ixNet.execute('loadConfig', 
                                                 self.ixNet.readFrom(configuration))
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to load configuration file '{f}' onto "
-                                "device '{d}'".format(d=self.device.name,
+                                "device '{d}'".format(d=self.name,
                                                 f=configuration)) from e
         # Verify return
         try:
@@ -148,11 +141,11 @@ class Ixia():
         except AssertionError as e:
             logger.error(load_config)
             raise AssertionError("Unable to load configuration file '{f}' onto "
-                                "device '{d}'".format(d=self.device.name,
+                                "device '{d}'".format(d=self.name,
                                                 f=configuration)) from e
         else:
             logger.info("Loaded configuration file '{f}' onto device '{d}'".\
-                    format(f=configuration, d=self.device.name))
+                    format(f=configuration, d=self.name))
 
         # Wait after loading configuration file
         logger.info("Waiting for '{}' seconds after loading configuration...".\
@@ -166,17 +159,17 @@ class Ixia():
         except AssertionError as e:
             raise AssertionError("Traffic is not in 'unapplied' state after "
                                 "loading configuration onto device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
             logger.info("Traffic in 'unapplied' state after loading configuration "
-                        "onto device '{}'".format(self.device.name))
+                        "onto device '{}'".format(self.name))
 
 
     @isconnected
     def start_all_protocols(self, wait_time=60):
         '''Start all protocols on Ixia'''
 
-        logger.info("Starting routing engine"))
+        logger.info("Starting routing engine")
 
         # Start protocols on IxNetwork
         try:
@@ -184,16 +177,16 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to start all protocols on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         # Verify return
         try:
             assert start_protocols == _PASS
         except AssertionError as e:
             logger.error(start_protocols)
             raise AssertionError("Unable to start all protocols on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
-            logger.info("Started protocols on device '{}".format(self.device.name))
+            logger.info("Started protocols on device '{}".format(self.name))
 
         # Wait after starting protocols
         logger.info("Waiting for '{}' seconds after starting all protocols...".\
@@ -205,7 +198,7 @@ class Ixia():
     def stop_all_protocols(self, wait_time=60):
         '''Stop all protocols on Ixia'''
 
-        logger.info("Stopping routing engine"))
+        logger.info("Stopping routing engine")
 
         # Stop protocols on IxNetwork
         try:
@@ -213,16 +206,16 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to stop all protocols on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         # Verify return
         try:
             assert stop_protocols == _PASS
         except AssertionError as e:
             logger.error(stop_protocols)
             raise AssertionError("Unable to stop all protocols on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
-            logger.info("Stopped protocols on device '{}'".format(self.device.name))
+            logger.info("Stopped protocols on device '{}'".format(self.name))
 
         # Wait after stopping protocols
         logger.info("Waiting for  '{}' seconds after stopping all protocols...".\
@@ -238,16 +231,16 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to apply L2/L3 traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         # Verify return
         try:
             assert apply_traffic == _PASS
         except AssertionError as e:
             logger.error(apply_traffic)
             raise AssertionError("Unable to apply L2/L3 traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
-            logger.info("Applied L2/L3 traffic on device '{}'".format(self.device.name))
+            logger.info("Applied L2/L3 traffic on device '{}'".format(self.name))
 
         # Wait after applying L2/L3 traffic
         logger.info("Waiting for '{}' seconds after applying L2/L3 traffic...".\
@@ -261,7 +254,7 @@ class Ixia():
         except Exception as e:
             raise AssertionError("Traffic is not in 'stopped' state after "
                                 "applying L2/L3 traffic on device '{}'".\
-                                format(self.device.name))
+                                format(self.name))
         else:
             logger.info("Traffic is in 'stopped' state after applying traffic as "
                         "expected")
@@ -277,17 +270,17 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to send ARP to all interfaces on device"
-                                " '{}'".format(self.device.name)) from e
+                                " '{}'".format(self.name)) from e
         # Verify return
         try:
             assert send_arp == _PASS
         except AssertionError as e:
             logger.error(send_arp)
             raise AssertionError("Unable to send ARP to all interfaces on device"
-                                " '{}'".format(self.device.name)) from e
+                                " '{}'".format(self.name)) from e
         else:
             logger.info("Sent ARP to all interfaces on device '{}'".\
-                    format(self.device.name))
+                    format(self.name))
 
         # Wait after sending ARP
         logger.info("Waiting for '{}' seconds after sending ARP to all interfaces...".\
@@ -303,16 +296,16 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Error sending NS to all interfaces on device "
-                                "'{}'".format(self.device.name)) from e
+                                "'{}'".format(self.name)) from e
         try:
             assert send_ns == _PASS
         except AssertionError as e:
             logger.error(send_ns)
             raise AssertionError("Error sending NS to all interfaces on device "
-                                "'{}'".format(self.device.name)) from e
+                                "'{}'".format(self.name)) from e
         else:
             logger.info("Sent NS to all interfaces on device '{}'".\
-                        format(self.device.name))
+                        format(self.name))
 
         # Wait after sending NS
         logger.info("Waiting for '{}' seconds after sending NS...".\
@@ -337,21 +330,21 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to start traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         # Verify return
         try:
             assert start_traffic == _PASS
         except AssertionError as e:
             logger.error(start_traffic)
             raise AssertionError("Unable to start traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
             logger.info("Started L2/L3 traffic on device '{}'".\
-                        format(self.device.name))
+                        format(self.name))
 
         # Wait after starting L2/L3 traffic for streams to converge to steady state
         logger.info("Waiting for '{}' seconds after after starting L2/L3 traffic "
-                    "for streams to converge to steady state...".format(wait_time)
+                    "for streams to converge to steady state...".format(wait_time))
         time.sleep(wait_time)
 
         # Check if traffic is in 'started' state
@@ -383,17 +376,17 @@ class Ixia():
         except Exception as e:
             logger.error(e)
             raise AssertionError("Unable to stop traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         # Verify result
         try:
             assert stop_traffic == _PASS
         except AssertionError as e:
             logger.error(stop_traffic)
             raise AssertionError("Unable to stop traffic on device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
             logger.info("Stopped L2/L3 traffic on device '{}'".\
-                        format(self.device.name))
+                        format(self.name))
         # Wait after starting L2/L3 traffic for streams to converge to steady state
         logger.info("Waiting for '{}' seconds after after stopping L2/L3 "
                     "traffic...".format(wait_time))
@@ -426,7 +419,7 @@ class Ixia():
                 logger.error(res_clear_all)
             else:
                 logger.info("Successfully cleared traffic statistics on "
-                            "device '{}'".format(self.device.name))
+                            "device '{}'".format(self.name))
 
         if clear_port_stats:
             logger.info("Clearing port statistics...")
@@ -442,7 +435,7 @@ class Ixia():
                     logger.error(res_clear_port)
                 else:
                     logger.info("Successfully cleared port statistics on "
-                                "device '{}'".format(self.device.name))
+                                "device '{}'".format(self.name))
 
         if clear_protocol_stats:
             logger.info("Clearing protocol statistics...")
@@ -458,7 +451,7 @@ class Ixia():
                     logger.error(res_clear_protocol)
                 else:
                     logger.info("Successfully cleared protocol statistics on "
-                                "device '{}'".format(self.device.name))
+                                "device '{}'".format(self.name))
         # Wait after clearing statistics
         logger.info("Waiting for '{}' seconds after clearing statistics".\
                     format(wait_time))
@@ -674,7 +667,7 @@ class Ixia():
                 # BEGIN CHECKING
                 # --------------
                 logger.info("Checking traffic stream: '{s} | {t}'".\
-                                format(s=src_dest_pair, t=stream)))
+                                format(s=src_dest_pair, t=stream))
 
                 # 1- Verify traffic Outage (in seconds) is less than tolerance threshold
                 logger.info("1. Verify traffic outage (in seconds) is less than "
@@ -881,9 +874,7 @@ class Ixia():
     @isconnected
     def compare_traffic_profile(self, profile1, profile2, loss_tolerance=5, rate_tolerance=2):
         '''Compare two Ixia traffic profiles'''
-
-        logger.info("Comparing traffic profiles"))
-
+        logger.info("Comparing traffic profiles")
         # Check profile1
         if not isinstance(profile1, PrettyTable) or not profile1.field_names:
             raise AssertionError("Profile1 is not in expected format or missing data")
@@ -930,7 +921,7 @@ class Ixia():
                     profile1_row_values['traffic_item'] == profile2_row_values['traffic_item']:
 
                     # Begin comparison
-                    logger.info("Comparing profiles for traffic item '{}'".format(profile1_row_values['traffic_item'])))
+                    logger.info("Comparing profiles for traffic item '{}'".format(profile1_row_values['traffic_item']))
 
                     # Compare Tx Frames Rate between two profiles
                     try:
@@ -1027,7 +1018,7 @@ class Ixia():
             raise AssertionError("Invalid view '{}' provided for CSV data dumping".\
                                 format(view_name))
 
-        logger.info("Save '{}' snapshot CSV".format(view_name)))
+        logger.info("Save '{}' snapshot CSV".format(view_name))
 
         logger.info("\n\nNOTE: Using csv_windows_path='{}' to save snapshot CSV."
                     "\nPlease provide alternate directory if unreachable\n\n".\
@@ -1259,7 +1250,7 @@ class Ixia():
     def assign_ixia_ports(self, wait_time=15):
         '''Assign physical Ixia ports from the loaded configuration to the corresponding virtual ports'''
 
-        logger.info("Assigning Ixia ports"))
+        logger.info("Assigning Ixia ports")
 
         # Get list of physical ports
         logger.info("Getting a list of physical ports...")
@@ -1584,7 +1575,7 @@ class Ixia():
             try:
                 # Get name of stack
                 stack_name = self.ixNet.getAttribute(stack, "-displayName")
-                logger.info(stack_name))
+                logger.info(stack_name)
 
                 # List of all the elements within data capture
                 for field in self.ixNet.getList(stack, 'field'):
@@ -1725,7 +1716,7 @@ class Ixia():
         '''Start specific traffic stream on Ixia'''
 
         logger.info("Starting L2/L3 traffic for traffic stream '{}'".\
-                        format(traffic_stream)))
+                        format(traffic_stream))
 
         # Find traffic stream object from stream name
         ti_obj = self.find_traffic_stream_object(traffic_stream=traffic_stream)
@@ -1774,7 +1765,7 @@ class Ixia():
         '''Stop specific traffic stream on Ixia'''
 
         logger.info("Stopping L2/L3 traffic for traffic stream '{}'".\
-                        format(traffic_stream)))
+                        format(traffic_stream))
 
         # Find traffic stream object from stream name
         ti_obj = self.find_traffic_stream_object(traffic_stream=traffic_stream)
@@ -1822,7 +1813,7 @@ class Ixia():
         '''Generate traffic for a given traffic stream'''
 
         logger.info("Generating L2/L3 traffic for traffic stream '{}'".\
-                        format(traffic_stream)))
+                        format(traffic_stream))
 
         # Find traffic stream object from stream name
         ti_obj = self.find_traffic_stream_object(traffic_stream=traffic_stream)
@@ -2039,7 +2030,7 @@ class Ixia():
         '''Start given flow group under of traffic stream on Ixia'''
 
         logger.info("Starting traffic for flow group '{}'".\
-                        format(flow_group)))
+                        format(flow_group))
 
         # Find flow group object from flow group name
         fg_obj = self.find_flow_group_object(traffic_stream=traffic_stream, flow_group=flow_group)
@@ -2074,7 +2065,7 @@ class Ixia():
         '''Stop given flow group under of traffic stream on Ixia'''
 
         logger.info("Stopping traffic for flow group '{}'".\
-                        format(flow_group)))
+                        format(flow_group))
 
         # Find flow group object from flow group name
         fg_obj = self.find_flow_group_object(traffic_stream=traffic_stream, flow_group=flow_group)
@@ -2206,7 +2197,7 @@ class Ixia():
         '''Start given Quick Flow Group on Ixia'''
 
         logger.info("Starting traffic for Quick Flow Group '{}'".\
-                        format(quick_flow_group)))
+                        format(quick_flow_group))
 
         # Find flow group object from flow group name
         qfg_obj = self.find_quick_flow_group_object(quick_flow_group=quick_flow_group)
@@ -2242,7 +2233,7 @@ class Ixia():
         '''Stop given Quick Flow Group on Ixia'''
 
         logger.info("Stopping traffic for Quick Flow Group '{}'".\
-                        format(quick_flow_group)))
+                        format(quick_flow_group))
 
         # Find flow group object from flow group name
         qfg_obj = self.find_quick_flow_group_object(quick_flow_group=quick_flow_group)
@@ -2357,7 +2348,7 @@ class Ixia():
             # Check row for loss/outage within tolerance
             if verbose:
                 logger.info("Checking flow group: '{t} | {vlan} | {pair}'".\
-                                format(t=flow_group_name, vlan=vlan_id, pair=src_dest_port_pair)))
+                                format(t=flow_group_name, vlan=vlan_id, pair=src_dest_port_pair))
 
             # 1- Verify current loss % is less than tolerance threshold
             # Get loss % value
@@ -2591,7 +2582,7 @@ class Ixia():
             logger.info("Setting flow group '{f}' of traffic stream '{t}' "
                             "line rate to '{r}' %".format(f=flow_group,
                                                         t=traffic_stream,
-                                                        r=rate)))
+                                                        r=rate))
 
             # Get flow group object of the given traffic stream
             flowgroupObj = self.get_flow_group_object(traffic_stream=traffic_stream, flow_group=flow_group)
@@ -2615,7 +2606,7 @@ class Ixia():
         else:
             # Set the line rate for the entire traffic stream
             logger.info("Setting traffic stream '{t}' line rate to '{r}' %".\
-                            format(t=traffic_stream, r=rate)))
+                            format(t=traffic_stream, r=rate))
 
             # Initial state
             initial_state = self.get_traffic_attribute(attribute='state')
@@ -2674,7 +2665,7 @@ class Ixia():
             # Set the packet rate for given flow group of this traffic item
             logger.info("Setting flow group '{f}' of traffic stream '{t}' "
                             "packet rate to '{r}' frames per second".\
-                            format(f=flow_group, t=traffic_stream, r=rate)))
+                            format(f=flow_group, t=traffic_stream, r=rate))
 
             # Get flow group object of the given traffic stream
             flowgroupObj = self.get_flow_group_object(traffic_stream=traffic_stream, flow_group=flow_group)
@@ -2697,7 +2688,7 @@ class Ixia():
         else:
             # Set the packet rate for the entire traffic stream
             logger.info("Setting traffic stream '{t}' packet rate to '{r}'"
-                            " frames per second".format(t=traffic_stream, r=rate)))
+                            " frames per second".format(t=traffic_stream, r=rate))
 
             # Initial state
             initial_state = self.get_traffic_attribute(attribute='state')
@@ -2777,7 +2768,7 @@ class Ixia():
                             "layer2 bit rate to '{r}' {u}".format(f=flow_group,
                                                                     t=traffic_stream,
                                                                     r=rate,
-                                                                    u=rate_unit)))
+                                                                    u=rate_unit))
 
             # Get flow group object of the given traffic stream
             flowgroupObj = self.get_flow_group_object(traffic_stream=traffic_stream, flow_group=flow_group)
@@ -2804,7 +2795,7 @@ class Ixia():
         else:
             # Set the layer2 bit rate for the entire traffic stream
             logger.info("Setting traffic stream '{t}' layer2 bit rate to"
-                            " '{r}' {u}".format(t=traffic_stream, r=rate, u=rate_unit)))
+                            " '{r}' {u}".format(t=traffic_stream, r=rate, u=rate_unit))
 
             # Initial state
             initial_state = self.get_traffic_attribute(attribute='state')
@@ -2866,7 +2857,7 @@ class Ixia():
 
         # Set the packet size for the traffic stream
         logger.info("Setting traffic stream '{t}' packet size to '{p}'".\
-                        format(t=traffic_stream, p=packet_size)))
+                        format(t=traffic_stream, p=packet_size))
 
         # Initial state
         initial_state = self.get_traffic_attribute(attribute='state')
@@ -3247,7 +3238,7 @@ class Ixia():
     def load_quicktest_configuration(self, configuration, wait_time=30):
         '''Load QuickTest configuration file'''
 
-        logger.info("Loading Quicktest configuration..."))
+        logger.info("Loading Quicktest configuration...")
 
         # Load the QuickTest configuration file onto Ixia
         try:
@@ -3257,7 +3248,7 @@ class Ixia():
             logger.error(e)
             raise AssertionError("Unable to load Quicktest configuration file "
                                 "'{f}' onto device '{d}'".format(f=configuration,
-                                d=self.device.name)) from e
+                                d=self.name)) from e
 
         # Verify return
         try:
@@ -3266,11 +3257,11 @@ class Ixia():
             logger.error(load_config)
             raise AssertionError("Unable to load Quicktest configuration file "
                                 "'{f}' onto device '{d}'".format(f=configuration,
-                                d=self.device.name)) from e
+                                d=self.name)) from e
         else:
             logger.info("Successfully loaded Quicktest configuration file '{f}' "
                         "onto device '{d}'".format(f=configuration,
-                        d=self.device.name))
+                        d=self.name))
 
         # Wait after loading configuration file
         logger.info("Waiting for '{}' seconds after loading configuration...".\
@@ -3284,10 +3275,10 @@ class Ixia():
         except AssertionError as e:
             raise AssertionError("Traffic is not in 'unapplied' state after "
                                 "loading configuration onto device '{}'".\
-                                format(self.device.name)) from e
+                                format(self.name)) from e
         else:
             logger.info("Traffic in 'unapplied' state after loading configuration "
-                        "onto device '{}'".format(self.device.name))
+                        "onto device '{}'".format(self.name))
 
 
     @isconnected
@@ -3295,7 +3286,7 @@ class Ixia():
         '''Execute specific RFC QuickTest'''
 
         logger.info("Prepare execution of Quicktest '{}'...".\
-                        format(quicktest)))
+                        format(quicktest))
 
         # Get QuickTest object
         qt_obj = self.find_quicktest_object(quicktest=quicktest)
@@ -3382,11 +3373,11 @@ class Ixia():
 
 
     @isconnected
-    def generate_export_quicktest_report(self, quicktest, report_wait=300, report_interval=60, export=True, dest_dir=runtime.directory, dest_file="TestReport.pdf"):
+    def generate_export_quicktest_report(self, quicktest, report_wait=300, report_interval=60, export=True, dest_dir='', dest_file="TestReport.pdf"):
         '''Generate QuickTest PDF report and return the location'''
 
         logger.info("Generating PDF report for Quicktest {}...".\
-                        format(quicktest)))
+                        format(quicktest))
 
         # Get QuickTest object
         qt_obj = self.find_quicktest_object(quicktest=quicktest)
@@ -3422,7 +3413,7 @@ class Ixia():
 
         # Export file if enabled by user
         if export:
-            logger.info("Exporting Quicktest '{}' PDF report".format(quicktest)))
+            logger.info("Exporting Quicktest '{}' PDF report".format(quicktest))
 
             # Exporting the QuickTest PDF file to /tmp on running server
             try:

@@ -21,9 +21,10 @@ user:
 
 # ixia configuration
 ixia:
+  name:               'ixia'
   api_server_ip:      35.135.192.14
   tcl_port:           22
   chassis_ip:         10.244.24.23
-  ixia_port_list:     ['11/1','11/2']
+  port_list:          ['11/1','11/2']
   ixnetwork_version:  8.5
   license_server_ip:  10.244.24.23
