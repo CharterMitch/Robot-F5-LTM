@@ -1,121 +1,29 @@
 # https://github.com/CiscoTestAutomation/genietrafficgen/blob/master/src/genie/trafficgen/ixianative.py
-import json, sys, os, traceback
-from ixnetwork_restpy.testplatform.testplatform import TestPlatform
-from ixnetwork_restpy.files import Files
+# Python
+import re
+import os
+import csv
+import time
+import logging
+from shutil import copyfile
+from prettytable import PrettyTable, from_csv
 
-def createSession(platform, apiServerIp, apiServerPort):
-    testPlatform = TestPlatform(apiServerIp, rest_port=apiServerPort, platform=platform, log_file_name='restpy.log')
-
-    # Console output verbosity: None|request|request_response
-    testPlatform.Trace = 'request_response'
-
-    session = testPlatform.Sessions.add()
-    ixNetwork = session.Ixnetwork
-
-    if platform == 'windows':
-        ixNetwork.NewConfig()
-
-    return ixNetwork
-
-def setLicensing(ixNetwork, licenseServerIp, licenseMode, licenseTier ):
-    ixNetwork.Globals.Licensing.LicensingServers = licenseServerIp
-    ixNetwork.Globals.Licensing.Mode = licenseMode
-    ixNetwork.Globals.Licensing.Tier = licenseTier
-
-# # The IP address for your Ixia license server(s) in a list.
-# licenseServerIp = ['10.244.24.23']
-# # subscription, perpetual or mixed
-# licenseMode = 'mixed'
-# # tier1, tier2, tier3, tier3-10g
-# licenseTier = 'tier3'
-
-def assignPorts(ixNetwork,portList):
-    # Assign ports
-    testPorts = []
-    vportList = [vport.href for vport in ixNetwork.Vport.find()]
-    for port in portList:
-        testPorts.append(dict(Arg1=port[0], Arg2=port[1], Arg3=port[2]))
-
-    ixNetwork.AssignPorts(testPorts, [], vportList, True)
-
-    # # A list of chassis to use
-    # ixChassisIpList = ['10.244.24.23']
-    # portList = [[ixChassisIpList[0], 4, 3], [ixChassisIpList[0], 4, 4]]
-
-def loadConfig(ixNetwork, configFile):
-    try:
-        ixNetwork.info('Loading config file: {0}'.format(configFile))
-        ixNetwork.LoadConfig(Files(configFile, local_file=True))
-    except Exception as errMsg:
-        ixNetwork.debug('\n%s' % traceback.format_exc())
-
-    #configFile = 'Arista_Multicast_v2.ixncfg'
-
-
-def startProtocols(ixNetwork):
-    ixNetwork.StartAllProtocols(Arg1='sync')
-
-def stopProtocols(ixNetwork):
-    ixNetwork.StopAllProtocols(Arg1='sync')
-
-
-def getTraffic(ixNetwork):
-    trafficItem = ixNetwork.Traffic.TrafficItem.find()[0]
-    return trafficItem
-    trafficItem.Generate()
-
-def startTraffic(ixNetwork):
-    ixNetwork.Traffic.Apply()
-    ixNetwork.Traffic.Start()
-
-def stopTraffic(ixNetwork):
-    ixNetwork.Traffic.Stop()
-
-
-from robot.api.deco import keyword
 from robot.api import logger
-from robot.utils import ConnectionCache
-
-logger.warn("Importing custom Arista library")
-
-class Ixia:
-
-    ROBOT_LIBRARY_SCOPE = "GLOBAL"
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        self.alias = None
-        self.connections = dict()
-        self._connection = ConnectionCache()
-
-    @keyword('Add ${quantity:\d+} routes with next-hop ${gateway}')
-    def add_ipv4_routes(self, quantity, gateway):
-        ''' Add random IPv4 routes to the IPv4 routing table
-            with the specified gateway as the next hop.
-
-            Usage:
-            *** Test Cases ***
-            Test route injection
-                Add 7 ipv4 routes with gateway 1.1.1.1
-                ...
-        '''
-        #if ${gateway} is ipv4 ....
-        #self.config('ip route {} {}'.format(route,gateway)):
-        #if ${gateway} is ipv6 ...
-        logger.warn('Adding routes to device.')
-        # while n < quantity: self.execute('ip route <yoda> <spok>') ...
-        #raise AssertionError("*HTML* <a>HREF</a>")
-
 
 # IxNetwork Native
 try:
-from IxNetwork import IxNet
+    from IxNetwork import IxNet
 except ImportError as e:
-raise ImportError("IxNetwork package is not installed in virtual env - "
-                    "https://pypi.org/project/IxNetwork/") from e
+    raise ImportError("IxNetwork package is not installed in virtual env - "
+                      "https://pypi.org/project/IxNetwork/") from e
 
-class Ixia(TrafficGen):
+
+logger.warn("Importing custom IXIA library")
+
+class Ixia():
     def __init__(self, *args, **kwargs):
+
+        ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
         super().__init__(*args, **kwargs)
 
@@ -123,16 +31,17 @@ class Ixia(TrafficGen):
         self.ixNet = IxNet()
         self._is_connected = False
         self.virtual_ports = []
-        self._genie_view = None
-        self._genie_page = None
+        self._robot_view = None
+        self._robot_page = None
         self._golden_profile = PrettyTable()
         self._flow_statistics_table = PrettyTable()
         self._traffic_statistics_table = PrettyTable()
         # Valid QuickTests (to be expanded as tests have been validated)
-        self.valid_quicktests = ['rfc2544frameLoss',
-                                    'rfc2544throughput',
-                                    'rfc2544back2back',
-                                    ]
+        self.valid_quicktests = [
+            'rfc2544frameLoss',
+            'rfc2544throughput',
+            'rfc2544back2back'
+            ]
 
         # Get Ixia device arguments from testbed YAML file
         for key in ['ixnetwork_api_server_ip', 'ixnetwork_tcl_port',
@@ -141,41 +50,14 @@ class Ixia(TrafficGen):
             # Verify Ixia ports provided are a list
             if key is 'ixia_port_list':
                 if not isinstance(self.connection_info[key], list):
-                    log.error("Attribute '{}' is not a list as expected".\
+                    logger.error("Attribute '{}' is not a list as expected".\
                                 format(key))
             try:
                 setattr(self, key, self.connection_info[key])
             except Exception:
-                raise GenieTgnError("Argument '{k}' is not found in testbed "
+                raise AssertionError("Argument '{k}' is not found in testbed "
                                     "YAML for device '{d}'".\
                                     format(k=key, d=self.device.name))
-
-        # Ixia Chassis Details
-        header = "Ixia Chassis Details"
-        summary = Summary(title=header, width=45)
-        summary.add_message(msg='IxNetwork API Server: {}'.\
-                            format(self.ixnetwork_api_server_ip))
-        summary.add_sep_line()
-        summary.add_message(msg='IxNetwork API Server Platform: Windows')
-        summary.add_sep_line()
-        summary.add_message(msg='IxNetwork Version: {}'.\
-                            format(self.ixnetwork_version))
-        summary.add_sep_line()
-        summary.add_message(msg='Ixia Chassis: {}'.\
-                            format(self.ixia_chassis_ip))
-        summary.add_sep_line()
-        summary.add_message(msg='Ixia License Server: {}'.\
-                            format(self.ixia_license_server_ip))
-        summary.add_sep_line()
-        summary.add_message(msg='Ixnetwork TCL Port: {}'.\
-                            format(self.ixnetwork_tcl_port))
-        summary.add_sep_line()
-        summary.print()
-
-        # Genie Traffic Documentation
-        url = get_url().replace("genie", "genietrafficgen")
-        log.info('For more information, see Genie traffic documentation: '
-                    '{}/ixianative.html'.format(url))
 
 
     def isconnected(func):
@@ -187,48 +69,43 @@ class Ixia(TrafficGen):
         def decorated(self, *args, **kwargs):
             # Check if connected
             try:
-                log.propagate = False
+                logger.propagate = False
                 self.ixNet.getAttribute('/globals', '-buildNumber')
             except Exception:
                 self.connect()
             finally:
-                log.propagate = True
+                logger.propagate = True
             return func(self, *args, **kwargs)
         return decorated
 
 
-    @BaseConnection.locked
     def connect(self):
         '''Connect to Ixia'''
-
-        log.info(banner("Connecting to IXIA"))
-
-        # Execute connect on IxNetwork
+        logger.info("Connecting to IXIA")
         try:
             connect = self.ixNet.connect(self.ixnetwork_api_server_ip,
                                         '-port', self.ixnetwork_tcl_port,
                                         '-version', self.ixnetwork_version,
                                         '-setAttribute', 'strict')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Failed to connect to device '{d}' on port "
+            logger.error(e)
+            raise AssertionError("Failed to connect to device '{d}' on port "
                                 "'{p}'".format(d=self.device.name,
                                             p=self.ixnetwork_tcl_port)) from e
         # Verify return
         try:
             assert connect == _PASS
         except AssertionError as e:
-            log.error(connect)
-            raise GenieTgnError("Failed to connect to device '{d}' on port "
+            logger.error(connect)
+            raise AssertionError("Failed to connect to device '{d}' on port "
                                 "'{p}'".format(d=self.device.name,
                                             p=self.ixnetwork_tcl_port)) from e
         else:
             self._is_connected = True
-            log.info("Connected to IxNetwork API server on TCL port '{p}'".\
+            logger.info("Connected to IxNetwork API server on TCL port '{p}'".\
                         format(d=self.device.name, p=self.ixnetwork_tcl_port))
 
 
-    @BaseConnection.locked
     def disconnect(self):
         '''Disconnect from traffic generator device'''
 
@@ -236,409 +113,363 @@ class Ixia(TrafficGen):
         try:
             disconnect = self.ixNet.disconnect()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to disconnect from '{}".\
+            logger.error(e)
+            raise AssertionError("Unable to disconnect from '{}".\
                                 format(self.device.name))
 
         # Verify return
         try:
             assert disconnect == _PASS
         except AssertionError as e:
-            log.error(disconnect)
-            raise GenieTgnError("Unable to disconnect from '{}'".\
+            logger.error(disconnect)
+            raise AssertionError("Unable to disconnect from '{}'".\
                                 format(self.device.name))
         else:
             self._is_connected = False
-            log.info("Disconnected from IxNetwork API server on TCL port '{p}'".\
+            logger.info("Disconnected from IxNetwork API server on TCL port '{p}'".\
                         format(d=self.device.name, p=self.ixnetwork_tcl_port))
 
 
-    @BaseConnection.locked
     @isconnected
     def load_configuration(self, configuration, wait_time=60):
         '''Load static configuration file onto Ixia'''
-
-        log.info(banner("Loading configuration"))
-
-        # Ixia Configuration Details
-        header = "Ixia Configuration Information"
-        summary = Summary(title=header, width=105)
-        summary.add_message(msg='Ixia Ports: {}'.format(self.ixia_port_list))
-        summary.add_sep_line()
-        summary.add_message(msg='File: {}'.format(configuration))
-        summary.add_sep_line()
-        summary.print()
-
-        # Execute load config on IxNetwork
+        logger.info("Loading configuration"))
         try:
             load_config = self.ixNet.execute('loadConfig', 
                                                 self.ixNet.readFrom(configuration))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to load configuration file '{f}' onto "
+            logger.error(e)
+            raise AssertionError("Unable to load configuration file '{f}' onto "
                                 "device '{d}'".format(d=self.device.name,
                                                 f=configuration)) from e
         # Verify return
         try:
             assert load_config == _PASS
         except AssertionError as e:
-            log.error(load_config)
-            raise GenieTgnError("Unable to load configuration file '{f}' onto "
+            logger.error(load_config)
+            raise AssertionError("Unable to load configuration file '{f}' onto "
                                 "device '{d}'".format(d=self.device.name,
                                                 f=configuration)) from e
         else:
-            log.info("Loaded configuration file '{f}' onto device '{d}'".\
+            logger.info("Loaded configuration file '{f}' onto device '{d}'".\
                     format(f=configuration, d=self.device.name))
 
         # Wait after loading configuration file
-        log.info("Waiting for '{}' seconds after loading configuration...".\
+        logger.info("Waiting for '{}' seconds after loading configuration...".\
                     format(wait_time))
         time.sleep(wait_time)
 
         # Verify traffic is in 'unapplied' state
-        log.info("Verify traffic is in 'unapplied' state after loading configuration")
+        logger.info("Verify traffic is in 'unapplied' state after loading configuration")
         try:
             assert self.get_traffic_attribute(attribute='state') == 'unapplied'
         except AssertionError as e:
-            raise GenieTgnError("Traffic is not in 'unapplied' state after "
+            raise AssertionError("Traffic is not in 'unapplied' state after "
                                 "loading configuration onto device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Traffic in 'unapplied' state after loading configuration "
+            logger.info("Traffic in 'unapplied' state after loading configuration "
                         "onto device '{}'".format(self.device.name))
 
 
-    @BaseConnection.locked
     @isconnected
     def start_all_protocols(self, wait_time=60):
         '''Start all protocols on Ixia'''
 
-        log.info(banner("Starting routing engine"))
+        logger.info("Starting routing engine"))
 
         # Start protocols on IxNetwork
         try:
             start_protocols = self.ixNet.execute('startAllProtocols')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start all protocols on device '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to start all protocols on device '{}'".\
                                 format(self.device.name)) from e
         # Verify return
         try:
             assert start_protocols == _PASS
         except AssertionError as e:
-            log.error(start_protocols)
-            raise GenieTgnError("Unable to start all protocols on device '{}'".\
+            logger.error(start_protocols)
+            raise AssertionError("Unable to start all protocols on device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Started protocols on device '{}".format(self.device.name))
+            logger.info("Started protocols on device '{}".format(self.device.name))
 
         # Wait after starting protocols
-        log.info("Waiting for '{}' seconds after starting all protocols...".\
+        logger.info("Waiting for '{}' seconds after starting all protocols...".\
                     format(wait_time))
         time.sleep(wait_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_all_protocols(self, wait_time=60):
         '''Stop all protocols on Ixia'''
 
-        log.info(banner("Stopping routing engine"))
+        logger.info("Stopping routing engine"))
 
         # Stop protocols on IxNetwork
         try:
             stop_protocols = self.ixNet.execute('stopAllProtocols')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to stop all protocols on device '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to stop all protocols on device '{}'".\
                                 format(self.device.name)) from e
         # Verify return
         try:
             assert stop_protocols == _PASS
         except AssertionError as e:
-            log.error(stop_protocols)
-            raise GenieTgnError("Unable to stop all protocols on device '{}'".\
+            logger.error(stop_protocols)
+            raise AssertionError("Unable to stop all protocols on device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Stopped protocols on device '{}'".format(self.device.name))
+            logger.info("Stopped protocols on device '{}'".format(self.device.name))
 
         # Wait after stopping protocols
-        log.info("Waiting for  '{}' seconds after stopping all protocols...".\
+        logger.info("Waiting for  '{}' seconds after stopping all protocols...".\
                     format(wait_time))
         time.sleep(wait_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def apply_traffic(self, wait_time=60):
         '''Apply L2/L3 traffic on Ixia'''
-
-        log.info(banner("Applying L2/L3 traffic"))
-
-        # Apply traffic on IxNetwork
         try:
             apply_traffic = self.ixNet.execute('apply', '/traffic')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to apply L2/L3 traffic on device '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to apply L2/L3 traffic on device '{}'".\
                                 format(self.device.name)) from e
         # Verify return
         try:
             assert apply_traffic == _PASS
         except AssertionError as e:
-            log.error(apply_traffic)
-            raise GenieTgnError("Unable to apply L2/L3 traffic on device '{}'".\
+            logger.error(apply_traffic)
+            raise AssertionError("Unable to apply L2/L3 traffic on device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Applied L2/L3 traffic on device '{}'".format(self.device.name))
+            logger.info("Applied L2/L3 traffic on device '{}'".format(self.device.name))
 
         # Wait after applying L2/L3 traffic
-        log.info("Waiting for '{}' seconds after applying L2/L3 traffic...".\
+        logger.info("Waiting for '{}' seconds after applying L2/L3 traffic...".\
                     format(wait_time))
         time.sleep(wait_time)
 
         # Verify traffic is in 'stopped' state
-        log.info("Verify traffic is in 'stopped' state...")
+        logger.info("Verify traffic is in 'stopped' state...")
         try:
             assert self.get_traffic_attribute(attribute='state') == 'stopped'
         except Exception as e:
-            raise GenieTgnError("Traffic is not in 'stopped' state after "
+            raise AssertionError("Traffic is not in 'stopped' state after "
                                 "applying L2/L3 traffic on device '{}'".\
                                 format(self.device.name))
         else:
-            log.info("Traffic is in 'stopped' state after applying traffic as "
+            logger.info("Traffic is in 'stopped' state after applying traffic as "
                         "expected")
 
 
-    @BaseConnection.locked
     @isconnected
     def send_arp(self, wait_time=10):
         '''Send ARP to all interfaces from Ixia'''
-
-        log.info(banner("Sending ARP to all interfaces from Ixia"))
-
+        logger.info("Sending ARP to all interfaces from Ixia")
         # Send ARP from Ixia
         try:
             send_arp = self.ixNet.execute('sendArpAll')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to send ARP to all interfaces on device"
+            logger.error(e)
+            raise AssertionError("Unable to send ARP to all interfaces on device"
                                 " '{}'".format(self.device.name)) from e
         # Verify return
         try:
             assert send_arp == _PASS
         except AssertionError as e:
-            log.error(send_arp)
-            raise GenieTgnError("Unable to send ARP to all interfaces on device"
+            logger.error(send_arp)
+            raise AssertionError("Unable to send ARP to all interfaces on device"
                                 " '{}'".format(self.device.name)) from e
         else:
-            log.info("Sent ARP to all interfaces on device '{}'".\
+            logger.info("Sent ARP to all interfaces on device '{}'".\
                     format(self.device.name))
 
         # Wait after sending ARP
-        log.info("Waiting for '{}' seconds after sending ARP to all interfaces...".\
+        logger.info("Waiting for '{}' seconds after sending ARP to all interfaces...".\
                     format(wait_time))
         time.sleep(wait_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def send_ns(self, wait_time=10):
         '''Send NS to all interfaces from Ixia'''
-
-        log.info(banner("Sending NS to all interfaces from Ixia"))
-
-        # Sent NS from Ixia
         try:
             send_ns = self.ixNet.execute('sendNsAll')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error sending NS to all interfaces on device "
+            logger.error(e)
+            raise AssertionError("Error sending NS to all interfaces on device "
                                 "'{}'".format(self.device.name)) from e
         try:
             assert send_ns == _PASS
         except AssertionError as e:
-            log.error(send_ns)
-            raise GenieTgnError("Error sending NS to all interfaces on device "
+            logger.error(send_ns)
+            raise AssertionError("Error sending NS to all interfaces on device "
                                 "'{}'".format(self.device.name)) from e
         else:
-            log.info("Sent NS to all interfaces on device '{}'".\
+            logger.info("Sent NS to all interfaces on device '{}'".\
                         format(self.device.name))
 
         # Wait after sending NS
-        log.info("Waiting for '{}' seconds after sending NS...".\
+        logger.info("Waiting for '{}' seconds after sending NS...".\
                     format(wait_time))
         time.sleep(wait_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def start_traffic(self, wait_time=60):
         '''Start traffic on Ixia'''
-
-        log.info(banner("Starting L2/L3 traffic"))
-
+        logger.info("Starting L2/L3 traffic")
         # Check if traffic is already started
         state = self.get_traffic_attribute(attribute='state')
         running = self.get_traffic_attribute(attribute='isTrafficRunning')
         if state == 'started' or running == 'true':
-            log.info("Traffic is already running and in 'started' state")
+            logger.info("Traffic is already running and in 'started' state")
             return
 
         # Start traffic on IxNetwork
         try:
             start_traffic = self.ixNet.execute('start', '/traffic')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start traffic on device '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to start traffic on device '{}'".\
                                 format(self.device.name)) from e
         # Verify return
         try:
             assert start_traffic == _PASS
         except AssertionError as e:
-            log.error(start_traffic)
-            raise GenieTgnError("Unable to start traffic on device '{}'".\
+            logger.error(start_traffic)
+            raise AssertionError("Unable to start traffic on device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Started L2/L3 traffic on device '{}'".\
+            logger.info("Started L2/L3 traffic on device '{}'".\
                         format(self.device.name))
 
         # Wait after starting L2/L3 traffic for streams to converge to steady state
-        log.info("Waiting for '{}' seconds after after starting L2/L3 traffic "
-                    "for streams to converge to steady state...".format(wait_time))
+        logger.info("Waiting for '{}' seconds after after starting L2/L3 traffic "
+                    "for streams to converge to steady state...".format(wait_time)
         time.sleep(wait_time)
 
         # Check if traffic is in 'started' state
-        log.info("Checking if traffic is in 'started' state...")
+        logger.info("Checking if traffic is in 'started' state...")
         current_state = self.get_traffic_attribute(attribute='state')
         try:
             assert current_state == 'started'
         except AssertionError as e:
-            log.error(e)
-            raise GenieTgnError("Traffic is not in 'started' state - traffic "
+            logger.error(e)
+            raise AssertionError("Traffic is not in 'started' state - traffic "
                                 "state is '{}'".format(current_state))
         else:
-            log.info("Traffic is in 'started' state")
+            logger.info("Traffic is in 'started' state")
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_traffic(self, wait_time=60):
         '''Stop traffic on Ixia'''
-
-        log.info(banner("Stopping L2/L3 traffic"))
-
+        logger.info("Stopping L2/L3 traffic")
         # Check if traffic is already stopped
         state = self.get_traffic_attribute(attribute='state')
         running = self.get_traffic_attribute(attribute='isTrafficRunning')
         if state == 'stopped' or running == 'false':
-            log.info("Traffic is not running or already in 'stopped' state")
+            logger.info("Traffic is not running or already in 'stopped' state")
             return
-
         # Stop traffic on IxNetwork
         try:
             stop_traffic = self.ixNet.execute('stop', '/traffic')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to stop traffic on device '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to stop traffic on device '{}'".\
                                 format(self.device.name)) from e
         # Verify result
         try:
             assert stop_traffic == _PASS
         except AssertionError as e:
-            log.error(stop_traffic)
-            raise GenieTgnError("Unable to stop traffic on device '{}'".\
+            logger.error(stop_traffic)
+            raise AssertionError("Unable to stop traffic on device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Stopped L2/L3 traffic on device '{}'".\
+            logger.info("Stopped L2/L3 traffic on device '{}'".\
                         format(self.device.name))
-
         # Wait after starting L2/L3 traffic for streams to converge to steady state
-        log.info("Waiting for '{}' seconds after after stopping L2/L3 "
+        logger.info("Waiting for '{}' seconds after after stopping L2/L3 "
                     "traffic...".format(wait_time))
         time.sleep(wait_time)
-
         # Check if traffic is in 'stopped' state
-        log.info("Checking if traffic is in 'stopped' state...")
+        logger.info("Checking if traffic is in 'stopped' state...")
         current_state = self.get_traffic_attribute(attribute='state')
         try:
             assert current_state == 'stopped'
         except AssertionError as e:
-            log.error(e)
-            raise GenieTgnError("Traffic is not in 'stopped' state - traffic "
+            logger.error(e)
+            raise AssertionError("Traffic is not in 'stopped' state - traffic "
                                 "state is '{}'".format(current_state))
         else:
-            log.info("Traffic is in 'stopped' state")
+            logger.info("Traffic is in 'stopped' state")
 
 
-    @BaseConnection.locked
     @isconnected
     def clear_statistics(self, wait_time=10, clear_port_stats=True, clear_protocol_stats=True):
         '''Clear all traffic, port, protocol statistics on Ixia'''
-
-        log.info(banner("Clearing traffic statistics"))
-
-        log.info("Clearing all statistics...")
         try:
             res_clear_all = self.ixNet.execute('clearStats')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to clear all statistics") from e
+            logger.error(e)
+            raise AssertionError("Unable to clear all statistics") from e
         else:
             try:
                 assert res_clear_all == _PASS
             except AssertionError as e:
-                log.error(res_clear_all)
+                logger.error(res_clear_all)
             else:
-                log.info("Successfully cleared traffic statistics on "
+                logger.info("Successfully cleared traffic statistics on "
                             "device '{}'".format(self.device.name))
 
         if clear_port_stats:
-            log.info("Clearing port statistics...")
+            logger.info("Clearing port statistics...")
             try:
                 res_clear_port = self.ixNet.execute('clearPortsAndTrafficStats')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to clear port statistics") from e
+                logger.error(e)
+                raise AssertionError("Unable to clear port statistics") from e
             else:
                 try:
                     assert res_clear_port == _PASS
                 except AssertionError as e:
-                    log.error(res_clear_port)
+                    logger.error(res_clear_port)
                 else:
-                    log.info("Successfully cleared port statistics on "
+                    logger.info("Successfully cleared port statistics on "
                                 "device '{}'".format(self.device.name))
 
         if clear_protocol_stats:
-            log.info("Clearing protocol statistics...")
+            logger.info("Clearing protocol statistics...")
             try:
                 res_clear_protocol = self.ixNet.execute('clearProtocolStats')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to clear protocol statistics") from e
+                logger.error(e)
+                raise AssertionError("Unable to clear protocol statistics") from e
             else:
                 try:
                     assert res_clear_protocol == _PASS
                 except AssertionError as e:
-                    log.error(res_clear_protocol)
+                    logger.error(res_clear_protocol)
                 else:
-                    log.info("Successfully cleared protocol statistics on "
+                    logger.info("Successfully cleared protocol statistics on "
                                 "device '{}'".format(self.device.name))
-
         # Wait after clearing statistics
-        log.info("Waiting for '{}' seconds after clearing statistics".\
+        logger.info("Waiting for '{}' seconds after clearing statistics".\
                     format(wait_time))
         time.sleep(wait_time)
 
 
-    @BaseConnection.locked
     @isconnected
-    def create_genie_statistics_view(self, view_create_interval=30, view_create_iteration=10, disable_tracking=False, disable_port_pair=False):
-        '''Creates a custom TCL View named "Genie" with the required stats data'''
-
-        log.info(banner("Creating new custom IxNetwork traffic statistics view 'GENIE'"))
-
-        # Default statistics to add to custom 'GENIE' traffic statistics view
+    def create_robot_statistics_view(self, view_create_interval=30, view_create_iteration=10, disable_tracking=False, disable_port_pair=False):
+        '''Creates a custom TCL View named "Robot" with the required stats data'''
+        logger.info("Creating new custom IxNetwork traffic statistics view 'Robot'")
+        # Default statistics to add to custom 'Robot' traffic statistics view
         default_stats_list = ["Frames Delta",
                                 "Tx Frames",
                                 "Rx Frames",
@@ -647,92 +478,92 @@ class Ixia(TrafficGen):
                                 "Rx Frame Rate",
                                 ]
 
-        # Delete any previously created TCL Views called "GENIE"
-        log.info("Deleting any existing traffic statistics view 'GENIE'...")
+        # Delete any previously created TCL Views called Robot
+        logger.info("Deleting any existing traffic statistics view 'Robot'...")
         try:
             for view in self.ixNet.getList('/statistics', 'view'):
-                if self.ixNet.getAttribute(view, '-caption') == 'GENIE':
+                if self.ixNet.getAttribute(view, '-caption') == 'Robot':
                     self.ixNet.remove(view)
                     self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to delete any previously created "
-                                "traffic statistics view named 'GENIE'.") from e
+            logger.error(e)
+            raise AssertionError("Unable to delete any previously created "
+                                "traffic statistics view named 'Robot'.") from e
 
         # Enable 'Traffic Items' filter if not present
         if disable_tracking:
-            log.info("Not enabling 'Traffic Items' filter for all traffic streams")
+            logger.info("Not enabling 'Traffic Items' filter for all traffic streams")
         else:
             self.enable_flow_tracking_filter(tracking_filter='trackingenabled0')
 
         # Enable 'Source/Dest Port Pair' filter if not present
         if disable_port_pair:
-            log.info("Not enabling 'Source/Dest Port Pair' filter for all traffic streams")
+            logger.info("Not enabling 'Source/Dest Port Pair' filter for all traffic streams")
         else:
             self.enable_flow_tracking_filter(tracking_filter='sourceDestPortPair0')
 
-        # Create a new TCL View called "GENIE"
-        log.info("Creating a new traffic statistics view 'GENIE'")
+        # Create a new TCL View called Robot
+        logger.info("Creating a new traffic statistics view 'Robot'")
         try:
-            self._genie_view = self.ixNet.add(self.ixNet.getRoot() + '/statistics', 'view')
-            self.ixNet.setAttribute(self._genie_view, '-caption', 'GENIE')
-            self.ixNet.setAttribute(self._genie_view, '-type', 'layer23TrafficFlow')
-            self.ixNet.setAttribute(self._genie_view, '-visible', 'true')
+            self._robot_view = self.ixNet.add(self.ixNet.getRoot() + '/statistics', 'view')
+            self.ixNet.setAttribute(self._robot_view, '-caption', 'Robot')
+            self.ixNet.setAttribute(self._robot_view, '-type', 'layer23TrafficFlow')
+            self.ixNet.setAttribute(self._robot_view, '-visible', 'true')
             self.ixNet.commit()
-            self._genie_view = self.ixNet.remapIds(self._genie_view)
-            self._genie_view = self._genie_view[0]
+            self._robot_view = self.ixNet.remapIds(self._robot_view)
+            self._robot_view = self._robot_view[0]
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to create new traffic statistics view "
-                                "named 'GENIE'.") from e
+            logger.error(e)
+            raise AssertionError("Unable to create new traffic statistics view "
+                                "named 'Robot'.") from e
 
-        # Populate traffic stream statistics in new TCL View 'GENIE'
-        log.info("Populating custom IxNetwork traffic statistics view 'GENIE'...")
+        # Populate traffic stream statistics in new TCL View 'Robot'
+        logger.info("Populating custom IxNetwork traffic statistics view 'Robot'...")
         try:
             # Get available traffic items, port filters
-            avail_traffic_items = self.ixNet.getList(self._genie_view, 'availableTrafficItemFilter')
-            avail_port_filter_list = self.ixNet.getList(self._genie_view, 'availablePortFilter')
-            layer23_traffic_flow_filter = self.ixNet.getList(self._genie_view, 'layer23TrafficFlowFilter')
+            avail_traffic_items = self.ixNet.getList(self._robot_view, 'availableTrafficItemFilter')
+            avail_port_filter_list = self.ixNet.getList(self._robot_view, 'availablePortFilter')
+            layer23_traffic_flow_filter = self.ixNet.getList(self._robot_view, 'layer23TrafficFlowFilter')
 
             # Set attributes
-            self.ixNet.setAttribute(self._genie_view+'/layer23TrafficFlowFilter', '-trafficItemFilterIds', avail_traffic_items)
-            self.ixNet.setAttribute(self._genie_view+'/layer23TrafficFlowFilter', '-portFilterIds', avail_port_filter_list)
-            #self.ixNet.setAttribute(self._genie_view+'/layer23TrafficFlowFilter', '-egressLatencyBinDisplayOption', 'showIngressRows')
+            self.ixNet.setAttribute(self._robot_view+'/layer23TrafficFlowFilter', '-trafficItemFilterIds', avail_traffic_items)
+            self.ixNet.setAttribute(self._robot_view+'/layer23TrafficFlowFilter', '-portFilterIds', avail_port_filter_list)
+            #self.ixNet.setAttribute(self._robot_view+'/layer23TrafficFlowFilter', '-egressLatencyBinDisplayOption', 'showIngressRows')
 
             # RemapIds
-            self._genie_view = self.ixNet.remapIds(self._genie_view)[0]
+            self._robot_view = self.ixNet.remapIds(self._robot_view)[0]
 
             # Add specified columns to TCL view
-            availableStatList = self.ixNet.getList(self._genie_view, 'statistic')
+            availableStatList = self.ixNet.getList(self._robot_view, 'statistic')
             for statName in default_stats_list:
-                log.info("Adding '{}' statistics to 'GENIE' view".format(statName))
-                stat = self._genie_view + '/statistic:' + '"{}"'.format(statName)
+                logger.info("Adding '{}' statistics to 'Robot' view".format(statName))
+                stat = self._robot_view + '/statistic:' + '"{}"'.format(statName)
                 if stat in availableStatList:
                     self.ixNet.setAttribute(stat, '-enabled', 'true')
                     self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to add Tx/Rx Frame Rate, Loss %, Frames"
-                        " delta data to 'GENIE' traffic statistics view") from e
+            logger.error(e)
+            raise AssertionError("Unable to add Tx/Rx Frame Rate, Loss %, Frames"
+                        " delta data to 'Robot' traffic statistics view") from e
 
         # Create and set enumerationFilter to descending
-        log.info("Get enumerationFilter to add custom columns to view")
+        logger.info("Get enumerationFilter to add custom columns to view")
         try:
             # Get enumerationFilter object
-            enumerationFilter = self.ixNet.add(self._genie_view+'/layer23TrafficFlowFilter', 'enumerationFilter')
+            enumerationFilter = self.ixNet.add(self._robot_view+'/layer23TrafficFlowFilter', 'enumerationFilter')
             self.ixNet.setAttribute(enumerationFilter, '-sortDirection', 'descending')
             self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get enumerationFilter object for"
-                                " 'GENIE' view") from e
+            logger.error(e)
+            raise AssertionError("Unable to get enumerationFilter object for"
+                                " 'Robot' view") from e
 
-        # Adding 'Source/Dest Port Pair' column to 'GENIE' view
-        log.info("Add 'Source/Dest Port Pair' column to 'GENIE' custom traffic statistics view...")
+        # Adding 'Source/Dest Port Pair' column to 'Robot' view
+        logger.info("Add 'Source/Dest Port Pair' column to 'Robot' custom traffic statistics view...")
         try:
-            # Find the 'Source/Dest Port Pair' object, add it to the 'GENIE' view
+            # Find the 'Source/Dest Port Pair' object, add it to the 'Robot' view
             source_dest_track_id = None
-            trackingFilterIdList = self.ixNet.getList(self._genie_view, 'availableTrackingFilter')
+            trackingFilterIdList = self.ixNet.getList(self._robot_view, 'availableTrackingFilter')
             for track_id in trackingFilterIdList:
                 if re.search('Source/Dest Port Pair', track_id):
                     source_dest_track_id = track_id
@@ -741,82 +572,75 @@ class Ixia(TrafficGen):
                 self.ixNet.setAttribute(enumerationFilter, '-trackingFilterId', source_dest_track_id)
                 self.ixNet.commit()
             else:
-                raise GenieTgnError("Unable to add column for filter "
-                                    "'Source/Dest Port Pair' to 'GENIE' "
+                raise AssertionError("Unable to add column for filter "
+                                    "'Source/Dest Port Pair' to 'Robot' "
                                     "traffic statistics view.")
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to add 'Source/Dest Port Pair' to "
-                                "'GENIE' traffic statistics view.") from e
+            logger.error(e)
+            raise AssertionError("Unable to add 'Source/Dest Port Pair' to "
+                                "'Robot' traffic statistics view.") from e
 
-        # Enable 'GENIE' view visibility
-        log.info("Enable custom IxNetwork traffic statistics view 'GENIE'...")
+        # Enable 'Robot' view visibility
+        logger.info("Enable custom IxNetwork traffic statistics view 'Robot'...")
         try:
-            # Re-enable TCL View "GENIE"
-            self.ixNet.setAttribute(self._genie_view, '-enabled', 'true')
-            self.ixNet.setAttribute(self._genie_view, '-visible', 'true')
+            # Re-enable TCL View Robot
+            self.ixNet.setAttribute(self._robot_view, '-enabled', 'true')
+            self.ixNet.setAttribute(self._robot_view, '-visible', 'true')
             self.ixNet.commit()
 
             # Print to log
-            log.info("Populated traffic statistics view 'GENIE' with required "
+            logger.info("Populated traffic statistics view 'Robot' with required "
                         "data.")
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while enabling traffic statistics view "
-                                "'GENIE' with required data.") from e
+            logger.error(e)
+            raise AssertionError("Error while enabling traffic statistics view "
+                                "'Robot' with required data.") from e
 
-        # Create Genie Page object to parse later
-        log.info("Displaying custom IxNetwork traffic statistics view 'GENIE' page...")
+        # Create Robot Page object to parse later
+        logger.info("Displaying custom IxNetwork traffic statistics view 'Robot' page...")
         try:
-            # Get the page view of the TCL View "GENIE"
-            self._genie_page = self.ixNet.getList(self._genie_view, 'page')[0]
-            self.ixNet.setAttribute(self._genie_page, '-egressMode', 'conditional')
+            # Get the page view of the TCL View Robot
+            self._robot_page = self.ixNet.getList(self._robot_view, 'page')[0]
+            self.ixNet.setAttribute(self._robot_page, '-egressMode', 'conditional')
             self.ixNet.commit()
 
             # Poll until the view is ready
             for i in range(0, view_create_iteration):
                 try:
-                    assert self.ixNet.getAttribute(self._genie_page, '-isReady') == 'true'
+                    assert self.ixNet.getAttribute(self._robot_page, '-isReady') == 'true'
                 except Exception as e:
-                    log.warning("IxNetwork traffic statistics view 'GENIE' is "
+                    logger.warning("IxNetwork traffic statistics view 'Robot' is "
                                 "not ready.\nSleeping {} seconds and before "
-                                "checking traffic statistics view 'GENIE'".\
+                                "checking traffic statistics view 'Robot'".\
                                 format(view_create_interval))
                     time.sleep(view_create_interval)
                 else:
-                    log.info("Custom IxNetwork traffic statistics view 'GENIE' "
+                    logger.info("Custom IxNetwork traffic statistics view 'Robot' "
                                 "is ready.")
                     break
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to create custom IxNetwork traffic "
-                                "statistics view 'GENIE' page.") from e
+            logger.error(e)
+            raise AssertionError("Unable to create custom IxNetwork traffic "
+                                "statistics view 'Robot' page.") from e
 
 
-    @BaseConnection.locked
     @isconnected
     def check_traffic_loss(self, traffic_streams=[], max_outage=120, loss_tolerance=15, rate_tolerance=5, check_iteration=10, check_interval=60, outage_dict={}):
         '''Check traffic loss for each traffic stream configured on Ixia
             using statistics/data from 'Traffic Item Statistics' view'''
 
         for i in range(check_iteration):
-
-            log.info("\nAttempt #{}: Checking for traffic outage/loss".format(i+1))
+            logger.info("\nAttempt #{}: Checking for traffic outage/loss".format(i+1))
             overall_result = {}
-
-            # Get and display 'GENIE' traffic statistics table containing outage/loss values
+            # Get and display 'Robot' traffic statistics table containing outage/loss values
             traffic_table = self.create_traffic_streams_table()
-
             # Check all streams for traffic outage/loss
             for row in traffic_table:
-
                 # Strip headers and borders
                 row.header = False ; row.border = False
-
                 # Get data
                 stream = row.get_string(fields=["Traffic Item"]).strip()
                 src_dest_pair = row.get_string(fields=["Source/Dest Port Pair"]).strip()
-
                 # Skip other streams if list of stream provided
                 if traffic_streams and stream not in traffic_streams:
                     continue
@@ -825,13 +649,13 @@ class Ixia(TrafficGen):
                 ti_type = self.get_traffic_stream_attribute(traffic_stream=stream,
                                                             attribute='trafficItemType')
                 if ti_type != 'l2L3':
-                    log.warning("SKIP: Traffic stream '{}' is not of type L2L3 "
+                    logger.warning("SKIP: Traffic stream '{}' is not of type L2L3 "
                                 "- skipping traffic loss checks".format(stream))
                     continue
 
-                # Skip checks if traffic stream from "GENIE" table not in configuration
+                # Skip checks if traffic stream from Robot table not in configuration
                 if stream not in self.get_traffic_stream_names():
-                    log.warning("SKIP: Traffic stream '{}' not found in current"
+                    logger.warning("SKIP: Traffic stream '{}' not found in current"
                                 " configuration".format(stream))
                     continue
 
@@ -849,56 +673,56 @@ class Ixia(TrafficGen):
                 # --------------
                 # BEGIN CHECKING
                 # --------------
-                log.info(banner("Checking traffic stream: '{s} | {t}'".\
+                logger.info("Checking traffic stream: '{s} | {t}'".\
                                 format(s=src_dest_pair, t=stream)))
 
                 # 1- Verify traffic Outage (in seconds) is less than tolerance threshold
-                log.info("1. Verify traffic outage (in seconds) is less than "
+                logger.info("1. Verify traffic outage (in seconds) is less than "
                             "tolerance threshold of '{}' seconds".format(given_max_outage))
                 current_outage = row.get_string(fields=["Outage (seconds)"]).strip()
                 if float(current_outage) <= float(given_max_outage):
-                    log.info("* Traffic outage of '{c}' seconds is within "
+                    logger.info("* Traffic outage of '{c}' seconds is within "
                                 "expected maximum outage threshold of '{g}' seconds".\
                                 format(c=current_outage, g=given_max_outage))
                     outage_check = True
                 else:
                     outage_check = False
-                    log.error("* Traffic outage of '{c}' seconds is *NOT* within "
+                    logger.error("* Traffic outage of '{c}' seconds is *NOT* within "
                                 "expected maximum outage threshold of '{g}' seconds".\
                                 format(c=current_outage, g=given_max_outage))
 
                 # 2- Verify current loss % is less than tolerance threshold
-                log.info("2. Verify current loss % is less than tolerance "
+                logger.info("2. Verify current loss % is less than tolerance "
                             "threshold of '{}' %".format(given_loss_tolerance))
                 if row.get_string(fields=["Loss %"]).strip() != '':
                     current_loss_percentage = row.get_string(fields=["Loss %"]).strip()
                 else:
                     current_loss_percentage = 0
                 if float(current_loss_percentage) <= float(given_loss_tolerance):
-                    log.info("* Current traffic loss of {l}% is within"
+                    logger.info("* Current traffic loss of {l}% is within"
                                 " maximum expected loss tolerance of {g}%".\
                                 format(l=current_loss_percentage, g=given_loss_tolerance))
                     loss_check = True
                 else:
                     loss_check = False
-                    log.error("* Current traffic loss of {l}% is *NOT* within"
+                    logger.error("* Current traffic loss of {l}% is *NOT* within"
                                 " maximum expected loss tolerance of {g}%".\
                                 format(l=current_loss_percentage, g=given_loss_tolerance))
 
                 # 3- Verify difference between Tx Rate & Rx Rate is less than tolerance threshold
-                log.info("3. Verify difference between Tx Rate & Rx Rate is less "
+                logger.info("3. Verify difference between Tx Rate & Rx Rate is less "
                             "than tolerance threshold of '{}' pps".format(given_rate_tolerance))
                 tx_rate = row.get_string(fields=["Tx Frame Rate"]).strip()
                 rx_rate = row.get_string(fields=["Rx Frame Rate"]).strip()
                 if abs(float(tx_rate) - float(rx_rate)) <= float(given_rate_tolerance):
-                    log.info("* Difference between Tx Rate '{t}' and Rx Rate"
+                    logger.info("* Difference between Tx Rate '{t}' and Rx Rate"
                                 " '{r}' is within expected maximum rate loss"
                                 " threshold of '{g}' packets per second".\
                                 format(t=tx_rate, r=rx_rate, g=given_rate_tolerance))
                     rate_check = True
                 else:
                     rate_check = False
-                    log.error("* Difference between Tx Rate '{t}' and Rx Rate"
+                    logger.error("* Difference between Tx Rate '{t}' and Rx Rate"
                                 " '{r}' is *NOT* within expected maximum rate loss"
                                 " threshold of '{g}' packets per second".\
                                 format(t=tx_rate, r=rx_rate, g=given_rate_tolerance))
@@ -913,23 +737,22 @@ class Ixia(TrafficGen):
 
             # Check if iteration required based on results
             if 'streams' not in overall_result:
-                log.info("\nSuccessfully verified traffic outages/loss is within "
+                logger.info("\nSuccessfully verified traffic outages/loss is within "
                             "tolerance for given traffic streams")
                 break
             elif i == check_iteration or i == check_iteration-1:
                 # End of iterations, raise Exception and exit
-                raise GenieTgnError("Unexpected traffic outage/loss is observed")
+                raise AssertionError("Unexpected traffic outage/loss is observed")
             else:
                 # Traffic loss observed, sleep and recheck
-                log.error("\nTraffic loss/outage observed for streams:")
+                logger.error("\nTraffic loss/outage observed for streams:")
                 for item in overall_result['streams']:
-                    log.error("* {}".format(item))
-                log.error("Sleeping '{s}' seconds and rechecking streams for "
+                    logger.error("* {}".format(item))
+                logger.error("Sleeping '{s}' seconds and rechecking streams for "
                             "traffic outage/loss".format(s=check_interval))
                 time.sleep(check_interval)
 
 
-    @BaseConnection.locked
     @isconnected
     def create_traffic_streams_table(self, set_golden=False, clear_stats=False, clear_stats_time=30, view_create_interval=30, view_create_iteration=5):
         '''Returns traffic profile of configured streams on Ixia'''
@@ -937,9 +760,9 @@ class Ixia(TrafficGen):
         # Init
         traffic_table = PrettyTable()
 
-        # If Genie view and page has not been created before, create one
-        if 'GENIE' not in self.get_all_statistics_views():
-            self.create_genie_statistics_view(view_create_interval=view_create_interval,
+        # If robot view and page has not been created before, create one
+        if 'Robot' not in self.get_all_statistics_views():
+            self.create_robot_statistics_view(view_create_interval=view_create_interval,
                                                 view_create_iteration=view_create_iteration)
 
         # Clear stats and wait
@@ -948,10 +771,10 @@ class Ixia(TrafficGen):
 
         try:
             # Traffic table headers
-            headers = self.ixNet.getAttribute(self._genie_page, '-columnCaptions')
+            headers = self.ixNet.getAttribute(self._robot_page, '-columnCaptions')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get Column Captions from custom view 'GENIE'")
+            logger.error(e)
+            raise AssertionError("Unable to get Column Captions from custom view 'Robot'")
 
         # Add column for Outage
         headers.append('Outage (seconds)')
@@ -972,30 +795,30 @@ class Ixia(TrafficGen):
             try:
                 assert item in headers
             except AssertionError as e:
-                raise GenieTgnError("Column '{}' is missing from custom created 'GENIE' view".format(item))
+                raise AssertionError("Column '{}' is missing from custom created 'Robot' view".format(item))
 
-        # Increase page size for "GENIE" view to max size
+        # Increase page size for Robot view to max size
         try:
             build_number = self.ixNet.getAttribute('/globals', '-buildNumber')
             if '7.40' in build_number or '7.50' in build_number:
                 max_pagesize = 200
             else:
                 max_pagesize = 2048
-            self.ixNet.setAttribute(self._genie_page, '-pageSize', max_pagesize)
+            self.ixNet.setAttribute(self._robot_page, '-pageSize', max_pagesize)
             self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to set 'GENIE' view page size to max "
+            logger.error(e)
+            raise AssertionError("Unable to set 'Robot' view page size to max "
                                 "value of {}".format(max_pagesize))
 
         # Get total number of pages
         try:
-            total_pages = int(self.ixNet.getAttribute(self._genie_page, '-totalPages'))
+            total_pages = int(self.ixNet.getAttribute(self._robot_page, '-totalPages'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get count of all pages in 'GENIE' view")
+            logger.error(e)
+            raise AssertionError("Unable to get count of all pages in 'Robot' view")
         else:
-            log.info("Total number of pages in 'GENIE' view is '{}'".\
+            logger.info("Total number of pages in 'Robot' view is '{}'".\
                         format(total_pages))
 
         # Loop over all pages and add values
@@ -1003,22 +826,22 @@ class Ixia(TrafficGen):
 
             # Set current page to i
             try:
-                self.ixNet.setAttribute(self._genie_page, '-currentPage', i)
+                self.ixNet.setAttribute(self._robot_page, '-currentPage', i)
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to proceed to 'GENIE' view page '{}'".\
+                logger.error(e)
+                raise AssertionError("Unable to proceed to 'Robot' view page '{}'".\
                                     format(i))
             else:
-                log.info("Reading data from 'GENIE' view page {i}/{t}".\
+                logger.info("Reading data from 'Robot' view page {i}/{t}".\
                             format(i=i, t=total_pages))
 
             # Get row data from current page
             try:
-                all_rows = self.ixNet.getAttribute(self._genie_page, '-rowValues')
+                all_rows = self.ixNet.getAttribute(self._robot_page, '-rowValues')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get row data from 'GENIE' "
+                logger.error(e)
+                raise AssertionError("Unable to get row data from 'Robot' "
                                     "view page '{}'".format(i))
 
             # Populate table with row data from current page
@@ -1044,35 +867,34 @@ class Ixia(TrafficGen):
 
         # Align and print profile table in the logs
         traffic_table.align = "l"
-        log.info(traffic_table)
+        logger.info(traffic_table)
 
         # If flag set, reset the golden profile
         if set_golden:
-            log.info("\nSetting golden traffic profile\n")
+            logger.info("\nSetting golden traffic profile\n")
             self._golden_profile = traffic_table
 
         # Return profile table to caller
         return traffic_table
 
 
-    @BaseConnection.locked
     @isconnected
     def compare_traffic_profile(self, profile1, profile2, loss_tolerance=5, rate_tolerance=2):
         '''Compare two Ixia traffic profiles'''
 
-        log.info(banner("Comparing traffic profiles"))
+        logger.info("Comparing traffic profiles"))
 
         # Check profile1
         if not isinstance(profile1, PrettyTable) or not profile1.field_names:
-            raise GenieTgnError("Profile1 is not in expected format or missing data")
+            raise AssertionError("Profile1 is not in expected format or missing data")
         else:
-            log.info("Profile1 is in expected format with data")
+            logger.info("Profile1 is in expected format with data")
 
         # Check profile2
         if not isinstance(profile2, PrettyTable) or not profile2.field_names:
-            raise GenieTgnError("Profile2 is not in expected format or missing data")
+            raise AssertionError("Profile2 is not in expected format or missing data")
         else:
-            log.info("Profile2 is in expected format with data")
+            logger.info("Profile2 is in expected format with data")
 
         # Compare both profiles
 
@@ -1085,7 +907,7 @@ class Ixia(TrafficGen):
             if row.get_string(fields=['Traffic Item']):
                 profile2_ti += 1
         if profile2_ti != profile1_ti:
-            raise GenieTgnError("Profiles do not have the same traffic items")
+            raise AssertionError("Profiles do not have the same traffic items")
 
         # Traffic profile column headers
         # ['Source/Dest Port Pair', 'Traffic Item', 'Tx Frames', 'Rx Frames', 'Frames Delta', 'Tx Frame Rate', 'Rx Frame Rate', 'Loss %', 'Outage (seconds)']
@@ -1108,21 +930,21 @@ class Ixia(TrafficGen):
                     profile1_row_values['traffic_item'] == profile2_row_values['traffic_item']:
 
                     # Begin comparison
-                    log.info(banner("Comparing profiles for traffic item '{}'".format(profile1_row_values['traffic_item'])))
+                    logger.info("Comparing profiles for traffic item '{}'".format(profile1_row_values['traffic_item'])))
 
                     # Compare Tx Frames Rate between two profiles
                     try:
                         assert abs(float(profile1_row_values['tx_rate']) - float(profile2_row_values['tx_rate'])) <= float(rate_tolerance)
                     except AssertionError as e:
                         compare_profile_failed = True
-                        log.error("* Tx Frames Rate for profile 1 '{p1}' and "
+                        logger.error("* Tx Frames Rate for profile 1 '{p1}' and "
                                     "profile 2 '{p2}' is more than expected "
                                     "tolerance of '{t}'".\
                                     format(p1=profile1_row_values['tx_rate'],
                                             p2=profile2_row_values['tx_rate'],
                                             t=rate_tolerance))
                     else:
-                        log.info("* Tx Frames Rate difference between "
+                        logger.info("* Tx Frames Rate difference between "
                                     "profiles is less than threshold of '{}'".\
                                     format(rate_tolerance))
 
@@ -1131,14 +953,14 @@ class Ixia(TrafficGen):
                         assert abs(float(profile1_row_values['rx_rate']) - float(profile2_row_values['rx_rate'])) <= float(rate_tolerance)
                     except AssertionError as e:
                         compare_profile_failed = True
-                        log.error("* Rx Frames Rate for profile 1 '{p1}' and"
+                        logger.error("* Rx Frames Rate for profile 1 '{p1}' and"
                                     " profile 2 '{p2}' is more than expected "
                                     "tolerance of '{t}'".\
                                     format(p1=profile1_row_values['rx_rate'],
                                             p2=profile2_row_values['rx_rate'],
                                             t=rate_tolerance))
                     else:
-                        log.info("* Rx Frames Rate difference between "
+                        logger.info("* Rx Frames Rate difference between "
                                     "profiles is less than threshold of '{}'".\
                                     format(rate_tolerance))
 
@@ -1157,34 +979,33 @@ class Ixia(TrafficGen):
                         assert abs(float(profile1_row_values['loss']) - float(profile2_row_values['loss'])) <= float(loss_tolerance)
                     except AssertionError as e:
                         compare_profile_failed = True
-                        log.error("* Loss % for profile 1 '{p1}' and "
+                        logger.error("* Loss % for profile 1 '{p1}' and "
                                     "profile 2 '{p2}' is more than expected "
                                     "tolerance of '{t}'".\
                                     format(p1=profile1_row_values['loss'],
                                             p2=profile2_row_values['loss'],
                                             t=loss_tolerance))
                     else:
-                        log.info("* Loss % difference between profiles "
+                        logger.info("* Loss % difference between profiles "
                                     "is less than threshold of '{}'".\
                                     format(loss_tolerance))
                 else:
-                    log.error("WARNING: The source/dest port pair and traffic"
+                    logger.error("WARNING: The source/dest port pair and traffic"
                                 " item are mismatched - skipping check")
             else:
-                raise GenieTgnError("Profiles provided for comparison do not "
+                raise AssertionError("Profiles provided for comparison do not "
                                     "contain relevant traffic data")
         # Final result of comparison
         if compare_profile_failed:
-            raise GenieTgnError("Comparison failed for traffic items between profiles")
+            raise AssertionError("Comparison failed for traffic items between profiles")
         else:
-            log.info("Comparison passed for all traffic items between profiles")
+            logger.info("Comparison passed for all traffic items between profiles")
 
 
     #--------------------------------------------------------------------------#
     #                               Utils                                      #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def save_statistics_snapshot_csv(self, view_name, csv_windows_path="C:\\Users\\", csv_file_name="Ixia_Statistics"):
         ''' Save 'Flow Statistics' or 'Traffic Item Statistics' snapshot as a CSV '''
@@ -1193,22 +1014,22 @@ class Ixia(TrafficGen):
         try:
             build_number = self.ixNet.getAttribute('/globals', '-buildNumber')
         except Exception as e:
-            raise GenieTgnError("Unable to get IxNetwork version number")
+            raise AssertionError("Unable to get IxNetwork version number")
         if '7.40' in build_number or '7.50' in build_number or '8.10' in build_number:
-            raise GenieTgnError("CSV snapshot functionality not supported on "
+            raise AssertionError("CSV snapshot functionality not supported on "
                                 "current Ixia version - {}".format(build_number))
 
         # Check valid view name provided
         try:
             assert view_name in ['Flow Statistics', 'Traffic Item Statistics']
         except AssertionError as e:
-            log.error(e)
-            raise GenieTgnError("Invalid view '{}' provided for CSV data dumping".\
+            logger.error(e)
+            raise AssertionError("Invalid view '{}' provided for CSV data dumping".\
                                 format(view_name))
 
-        log.info(banner("Save '{}' snapshot CSV".format(view_name)))
+        logger.info("Save '{}' snapshot CSV".format(view_name)))
 
-        log.info("\n\nNOTE: Using csv_windows_path='{}' to save snapshot CSV."
+        logger.info("\n\nNOTE: Using csv_windows_path='{}' to save snapshot CSV."
                     "\nPlease provide alternate directory if unreachable\n\n".\
                     format(csv_windows_path))
 
@@ -1223,32 +1044,32 @@ class Ixia(TrafficGen):
         try:
             self.ixNet.setAttribute(page_obj, '-pageSize', max_pagesize)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to change pageSize to {p} for '{v}' "
+            logger.error(e)
+            raise AssertionError("Unable to change pageSize to {p} for '{v}' "
                                 "view".format(p=max_pagesize, v=view_name))
 
         # Enable CSV logging
-        log.info("Enable CSV logging on Ixia...")
+        logger.info("Enable CSV logging on Ixia...")
         try:
             self.ixNet.setAttribute('::ixNet::OBJ-/statistics', '-enableCsvLogging', 'true')
             self.ixNet.setAttribute('::ixNet::OBJ-/statistics', '-csvFilePath', csv_windows_path)
             self.ixNet.setAttribute('::ixNet::OBJ-/statistics', '-pollInterval', 1)
             self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while enabling CSV logging on Ixia")
+            logger.error(e)
+            raise AssertionError("Error while enabling CSV logging on Ixia")
         else:
-            log.info("Successfully enabled CSV logging on Ixia")
+            logger.info("Successfully enabled CSV logging on Ixia")
 
         # Get snapshot options
-        log.info("Get list of all snapshot options...")
+        logger.info("Get list of all snapshot options...")
         try:
             opts = self.ixNet.execute('GetDefaultSnapshotSettings')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get CSV snapshot options")
+            logger.error(e)
+            raise AssertionError("Unable to get CSV snapshot options")
         else:
-            log.info("Successfully retreived options available")
+            logger.info("Successfully retreived options available")
 
         # Configure options settings
         filePathToChange = 'Snapshot.View.Csv.Location: ' + csv_windows_path
@@ -1259,53 +1080,50 @@ class Ixia(TrafficGen):
         opts.append(fileNameToAppend)
 
         # Save snapshot to location provided
-        log.info("Save CSV snapshot of '{v}' view to '{path}\\{file}.csv'...".\
+        logger.info("Save CSV snapshot of '{v}' view to '{path}\\{file}.csv'...".\
                     format(v=view_name, path=csv_windows_path, file=csv_file_name))
         try:
             self.ixNet.execute('TakeViewCSVSnapshot', ["{}".format(view_name)], opts)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to take CSV snapshot of '{}' view".\
+            logger.error(e)
+            raise AssertionError("Unable to take CSV snapshot of '{}' view".\
                                 format(view_name))
         else:
-            log.info("Successfully saved CSV snapshot of '{}' view to:".format(view_name))
-            log.info("{path}\\{file}".format(path=csv_windows_path, file=csv_file_name))
+            logger.info("Successfully saved CSV snapshot of '{}' view to:".format(view_name))
+            logger.info("{path}\\{file}".format(path=csv_windows_path, file=csv_file_name))
 
         # Set local and copy file paths
         windows_stats_csv = csv_windows_path + '\\' + csv_file_name + '.csv'
         stats_csv_file = "/tmp/" + csv_file_name + '.csv'
 
         # Copy file to /tmp/
-        log.info("Copy '{v}' CSV to '{f}'".format(v=view_name, f=stats_csv_file))
+        logger.info("Copy '{v}' CSV to '{f}'".format(v=view_name, f=stats_csv_file))
         try:
             self.ixNet.execute('copyFile',
                                 self.ixNet.readFrom(windows_stats_csv, '-ixNetRelative'),
                                 self.ixNet.writeTo(stats_csv_file, '-overwrite'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to copy '{v}' CSV snapshot to '{f}'".\
+            logger.error(e)
+            raise AssertionError("Unable to copy '{v}' CSV snapshot to '{f}'".\
                                 format(v=view_name, f=stats_csv_file))
         else:
-            log.info("Successfully copied '{v}' CSV snapshot to '{f}'".\
+            logger.info("Successfully copied '{v}' CSV snapshot to '{f}'".\
                         format(v=view_name, f=stats_csv_file))
 
         # Return to caller
         return stats_csv_file
 
 
-    @BaseConnection.locked
     @isconnected
     def get_all_statistics_views(self):
         '''Returns all the statistics views/tabs currently present on IxNetwork'''
-
         all_views = []
-
         try:
             # Views from the 613
             views = self.ixNet.getList('/statistics', 'view')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get a list of all statistics views "
+            logger.error(e)
+            raise AssertionError("Unable to get a list of all statistics views "
                                 "(tabs) present on IxNetwork client")
         else:
             for item in views:
@@ -1319,110 +1137,89 @@ class Ixia(TrafficGen):
     #                               Traffic                                    #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_attribute(self, attribute):
         '''Returns the specified attribute for the given traffic configuration'''
-
         # Sample attributes
         # ['state', 'isApplicationTrafficRunning', 'isTrafficRunning']
-
         try:
             return self.ixNet.getAttribute('/traffic', '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to check attribute '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to check attribute '{}'".\
                                 format(attribute)) from e
 
 
-    @BaseConnection.locked
     @isconnected
-    def get_traffic_items_from_genie_view(self, traffic_table):
-        '''Returns list of all traffic items from within the "GENIE" view traffic table'''
-
+    def get_traffic_items_from_robot_view(self, traffic_table):
+        '''Returns list of all traffic items from within the Robot view traffic table'''
         # Init
         traffic_streams = []
-
         # Loop over traffic table provided
         for row in traffic_table:
             row.header = False
             row.border = False
             traffic_streams.append(row.get_string(fields=["Traffic Item"]).strip())
-
         # Return to caller
         return traffic_streams
 
 
-    @BaseConnection.locked
     @isconnected
     def enable_flow_tracking_filter(self, tracking_filter):
         '''Enable specific flow tracking filters for traffic streams'''
-
         # Check valid tracking_filter passed in
         assert tracking_filter in ['trackingenabled0',
                                     'sourceDestPortPair0',
                                     'sourceDestValuePair0',
                                     ]
-
         # Init
         filter_added = False
-
         # Mapping for filter names
         map_dict = {
             'trackingenabled0': "'Traffic Items'",
             'sourceDestPortPair0': "'Source/Dest Port Pair'",
             'sourceDestValuePair0': "'Source/Dest Value Pair"
             }
-
-        log.info("Checking if {} filter present in L2L3 traffic streams...".\
+        logger.info("Checking if {} filter present in L2L3 traffic streams...".\
                     format(map_dict[tracking_filter]))
-
         # Get all traffic stream objects in configuration
         traffic_streams = self.get_traffic_stream_objects()
-
         if not traffic_streams:
-            raise GenieTgnError("Unable to find traffic streams for configuration")
-
+            raise AssertionError("Unable to find traffic streams for configuration")
         # Initial state
         initial_state = self.get_traffic_attribute(attribute='state')
-
         for ti in traffic_streams:
-
             # Get traffic stream type
             ti_type = None ; ti_name = None
             try:
                 ti_type = self.ixNet.getAttribute(ti, '-trafficItemType')
                 ti_name = self.ixNet.getAttribute(ti, '-name')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get traffic item '{}'"
+                logger.error(e)
+                raise AssertionError("Unable to get traffic item '{}'"
                                     " attributes".format(ti))
-
             # If traffic streams is not of type 'l2l3' then skip to next stream
             if ti_type != 'l2L3':
                 continue
-
             # Get the status of 'trackingenabled' filter
             trackByList = []
             try:
                 trackByList = self.ixNet.getAttribute(ti + '/tracking', '-trackBy')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while checking status of filter '{f}'"
+                logger.error(e)
+                raise AssertionError("Error while checking status of filter '{f}'"
                                     " for traffic stream '{t}'".format(t=ti_name,
                                     f=tracking_filter))
-
             # If tracking_filter is already present then skip to next stream
             if tracking_filter in trackByList:
                 continue
-
             # At this point, tracking_filter is not found, add it manually
             # Stop the traffic
             state = self.get_traffic_attribute(attribute='state')
             if state != 'stopped' and state != 'unapplied':
                 self.stop_traffic(wait_time=15)
 
-            log.info("Adding '{f}' filter to traffic stream '{t}'".\
+            logger.info("Adding '{f}' filter to traffic stream '{t}'".\
                         format(f=tracking_filter, t=ti_name))
 
             # Add tracking_filter
@@ -1430,8 +1227,8 @@ class Ixia(TrafficGen):
             try:
                 self.ixNet.setMultiAttribute(ti + '/tracking', '-trackBy', trackByList)
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while adding '{f}' filter to traffic"
+                logger.error(e)
+                raise AssertionError("Error while adding '{f}' filter to traffic"
                                     " stream '{t}'".format(t=ti_name,
                                     f=tracking_filter))
             else:
@@ -1444,11 +1241,10 @@ class Ixia(TrafficGen):
             if initial_state == 'started':
                 self.start_traffic(wait_time=15)
         else:
-            log.info("Filter '{}' previously configured for all L2L3 traffic "
+            logger.info("Filter '{}' previously configured for all L2L3 traffic "
                         "streams".format(tracking_filter))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_golden_profile(self):
         ''' Returns golden profile'''
@@ -1459,18 +1255,17 @@ class Ixia(TrafficGen):
     #                           Virtual Ports                                  #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def assign_ixia_ports(self, wait_time=15):
         '''Assign physical Ixia ports from the loaded configuration to the corresponding virtual ports'''
 
-        log.info(banner("Assigning Ixia ports"))
+        logger.info("Assigning Ixia ports"))
 
         # Get list of physical ports
-        log.info("Getting a list of physical ports...")
+        logger.info("Getting a list of physical ports...")
         self.physical_ports = []
         for item in self.ixia_port_list:
-            log.info("-> {}".format(item))
+            logger.info("-> {}".format(item))
             ixnet_port = []
             lc, port = item.split('/')
             for tmpvar in self.ixia_chassis_ip, lc, port:
@@ -1478,7 +1273,7 @@ class Ixia(TrafficGen):
             self.physical_ports.append(ixnet_port)
 
         # Add the chassis
-        log.info("Adding chassis...")
+        logger.info("Adding chassis...")
         try:
             self.chassis = self.ixNet.add(self.ixNet.getRoot() + \
                                             'availableHardware',\
@@ -1487,79 +1282,78 @@ class Ixia(TrafficGen):
             self.ixNet.commit()
             self.chassis = self.ixNet.remapIds(self.chassis)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while adding chassis '{}'".\
+            logger.error(e)
+            raise AssertionError("Error while adding chassis '{}'".\
                                 format(self.ixia_chassis_ip))
         else:
-            log.info("Successfully added chassis '{}'".\
+            logger.info("Successfully added chassis '{}'".\
                         format(self.ixia_chassis_ip))
 
         # Get virtual ports
-        log.info("Getting virtual ports...")
+        logger.info("Getting virtual ports...")
         try:
             self.virtual_ports = self.ixNet.getList(self.ixNet.getRoot(), 'vport')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while getting virtual ports from "
+            logger.error(e)
+            raise AssertionError("Error while getting virtual ports from "
                                 "the loaded configuration")
         else:
-            log.info("Found virtual ports from loaded configuration:")
+            logger.info("Found virtual ports from loaded configuration:")
             for item in self.virtual_ports:
-                log.info("-> {}".format(item))
+                logger.info("-> {}".format(item))
 
         # Assign ports
-        log.info("Assign physical ports to virtual ports...")
+        logger.info("Assign physical ports to virtual ports...")
         try:
             self.ixNet.execute('assignPorts', self.physical_ports, [],
                                 self.virtual_ports, True)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to assign physical ports to virtual ports")
+            logger.error(e)
+            raise AssertionError("Unable to assign physical ports to virtual ports")
         else:
-            log.info("Successfully assigned physical ports to virtual ports")
-            log.info("Waiting {} seconds after assigning ports...".format(wait_time))
+            logger.info("Successfully assigned physical ports to virtual ports")
+            logger.info("Waiting {} seconds after assigning ports...".format(wait_time))
             time.sleep(wait_time)
 
         # Verify ports are up and connected
-        log.info("Verify ports are up and connected...")
+        logger.info("Verify ports are up and connected...")
         for vport in self.virtual_ports:
             # Get the name
             try:
                 name = self.ixNet.getAttribute(vport, '-name')
             except Exception as e:
-                raise GenieTgnError("Unable to get 'name' for virtual port"
+                raise AssertionError("Unable to get 'name' for virtual port"
                                     " '{}'".format(vport))
             # Verify port is up
             try:
                 state = self.ixNet.getAttribute(vport, '-state')
                 assert state == 'up'
             except AssertionError as e:
-                log.warning("Port '{}' is not 'up', sending ARP and rechecking state...")
+                logger.warning("Port '{}' is not 'up', sending ARP and rechecking state...")
                 # Send ARP on port
                 try:
                     self.send_arp(wait_time=wait_time)
-                except GenieTgnError as e:
-                    log.error(e)
-                    raise GenieTgnError("Port '{n}' is '{s}' and not 'up' after"
+                except AssertionError as e:
+                    logger.error(e)
+                    raise AssertionError("Port '{n}' is '{s}' and not 'up' after"
                                         " sending ARP".format(n=name, s=state))
             else:
-                log.info("Port '{}' is up as expected".format(name))
+                logger.info("Port '{}' is up as expected".format(name))
 
             # Verify port is connected
             try:
                 assert self.ixNet.getAttribute(vport, '-isConnected') == 'true'
             except AssertionError as e:
-                raise GenieTgnError("Port '{}' is not connected".format(name))
+                raise AssertionError("Port '{}' is not connected".format(name))
             else:
-                log.info("Port '{}' is connected".format(name))
+                logger.info("Port '{}' is connected".format(name))
 
         # If all pass
-        log.info("Assigned the following physical Ixia ports to virtual ports:")
+        logger.info("Assigned the following physical Ixia ports to virtual ports:")
         for port in self.ixia_port_list:
-            log.info("-> Ixia Port: '{}'".format(port))
+            logger.info("-> Ixia Port: '{}'".format(port))
 
 
-    @BaseConnection.locked
     @isconnected
     def set_ixia_virtual_ports(self):
         '''Set virtual Ixia ports for this configuration'''
@@ -1568,11 +1362,10 @@ class Ixia(TrafficGen):
             # Set virtual Ixia ports
             self.virtual_ports = self.ixNet.getList(self.ixNet.getRoot(), 'vport')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get virtual ports on Ixia")
+            logger.error(e)
+            raise AssertionError("Unable to get virtual ports on Ixia")
 
 
-    @BaseConnection.locked
     @isconnected
     def get_ixia_virtual_port(self, port_name):
         '''Return virtual Ixia port object from port_name'''
@@ -1587,7 +1380,6 @@ class Ixia(TrafficGen):
                 return item
 
 
-    @BaseConnection.locked
     @isconnected
     def get_ixia_virtual_port_attribute(self, vport, attribute):
         '''Get attibute for virtual Ixia port'''
@@ -1596,8 +1388,8 @@ class Ixia(TrafficGen):
             # Extract Ixia virtual port settings/attribute
             value = self.ixNet.getAttribute(vport, '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get attribute '{a}'' for ixia"
+            logger.error(e)
+            raise AssertionError("Unable to get attribute '{a}'' for ixia"
                                 " port '{p}'".format(a=attribute, p=vport))
         else:
             return value
@@ -1607,7 +1399,6 @@ class Ixia(TrafficGen):
     #                           Packet Capture                                 #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_ixia_virtual_port_capture(self, port_name):
 
@@ -1615,19 +1406,18 @@ class Ixia(TrafficGen):
         try:
             vportObj = self.get_ixia_virtual_port(port_name=port_name)
         except:
-            raise GenieTgnError("Unable to get virtual Ixia port object for "
+            raise AssertionError("Unable to get virtual Ixia port object for "
                                 "port '{}'".format(port_name))
 
         # Get captureObj for this virtual port
         try:
             return self.ixNet.getList(vportObj, 'capture')[0]
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get captureObj for port '{}'".\
+            logger.error(e)
+            raise AssertionError("Unable to get captureObj for port '{}'".\
                                 format(port_name))
 
 
-    @BaseConnection.locked
     @isconnected
     def enable_data_packet_capture(self, ports):
         '''Enable data packet capture on ports specified'''
@@ -1638,16 +1428,15 @@ class Ixia(TrafficGen):
             captureObj = self.get_ixia_virtual_port_capture(port_name=port)
 
             # Enable data packet capture on port/node
-            log.info("Enabling data packet capture on port '{}'".format(port))
+            logger.info("Enabling data packet capture on port '{}'".format(port))
             try:
                 self.ixNet.setAttribute(captureObj, '-hardwareEnabled', 'true')
                 self.ixNet.commit()
             except Exception as e:
-                raise GenieTgnError("Error while enabling data packet capture "
+                raise AssertionError("Error while enabling data packet capture "
                                     "on port '{}'".format(port))
 
 
-    @BaseConnection.locked
     @isconnected
     def disable_data_packet_capture(self, ports):
         '''Disable data packet capture on ports specified'''
@@ -1658,16 +1447,15 @@ class Ixia(TrafficGen):
             captureObj = self.get_ixia_virtual_port_capture(port_name=port)
 
             # Enable data packet capture on port/node
-            log.info("Disabling data packet capture on port '{}'".format(port))
+            logger.info("Disabling data packet capture on port '{}'".format(port))
             try:
                 self.ixNet.setAttribute(captureObj, '-hardwareEnabled', 'false')
                 self.ixNet.commit()
             except Exception as e:
-                raise GenieTgnError("Error while enabling data packet capture "
+                raise AssertionError("Error while enabling data packet capture "
                                     "on port '{}'".format(port))
 
 
-    @BaseConnection.locked
     @isconnected
     def enable_control_packet_capture(self, ports):
         '''Enable data packet capture on ports specified'''
@@ -1678,16 +1466,15 @@ class Ixia(TrafficGen):
             captureObj = self.get_ixia_virtual_port_capture(port_name=port)
 
             # Enable data packet capture on port/node
-            log.info("Enabling control packet capture on port '{}'".format(port))
+            logger.info("Enabling control packet capture on port '{}'".format(port))
             try:
                 self.ixNet.setAttribute(captureObj, '-softwareEnabled', 'true')
                 self.ixNet.commit()
             except Exception as e:
-                raise GenieTgnError("Error while enabling data packet capture "
+                raise AssertionError("Error while enabling data packet capture "
                                     "on port '{}'".format(port))
 
 
-    @BaseConnection.locked
     @isconnected
     def disable_control_packet_capture(self, ports):
         '''Disable data packet capture on ports specified'''
@@ -1698,49 +1485,46 @@ class Ixia(TrafficGen):
             captureObj = self.get_ixia_virtual_port_capture(port_name=port)
 
             # Enable data packet capture on port/node
-            log.info("Disabling data packet capture on port '{}'".format(port))
+            logger.info("Disabling data packet capture on port '{}'".format(port))
             try:
                 self.ixNet.setAttribute(captureObj, '-softwareEnabled', 'false')
                 self.ixNet.commit()
             except Exception as e:
-                raise GenieTgnError("Error while enabling data packet capture "
+                raise AssertionError("Error while enabling data packet capture "
                                     "on port '{}'".format(port))
 
 
-    @BaseConnection.locked
     @isconnected
     def start_packet_capture(self, capture_time=60):
         '''Start capturing packets for a specified amount of time'''
 
-        log.info("Starting packet capture...")
+        logger.info("Starting packet capture...")
         try:
             # Start capturing packets
             self.ixNet.execute('startCapture')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start packet capture")
+            logger.error(e)
+            raise AssertionError("Unable to start packet capture")
 
         # Time to wait after capturing packets
-        log.info("Waiting for '{}' seconds after starting packet capture".\
+        logger.info("Waiting for '{}' seconds after starting packet capture".\
                                                         format(capture_time))
         time.sleep(capture_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_packet_capture(self):
         '''Stop capturing packets'''
 
-        log.info("Stopping packet capture...")
+        logger.info("Stopping packet capture...")
         try:
             # Start capturing packets
             self.ixNet.execute('stopCapture')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start packet capture")
+            logger.error(e)
+            raise AssertionError("Unable to start packet capture")
 
 
-    @BaseConnection.locked
     @isconnected
     def get_packet_capture_count(self, port_name, pcap_type):
         ''' Get the total count of packets captured during packet capture'''
@@ -1753,30 +1537,29 @@ class Ixia(TrafficGen):
 
         if pcap_type == 'control':
 
-            log.info("Getting total count of Control Packets...")
+            logger.info("Getting total count of Control Packets...")
             try:
                 packet_count = self.ixNet.getAttribute(captureObj, '-controlPacketCounter')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting total contol packets"
+                logger.error(e)
+                raise AssertionError("Error while getting total contol packets"
                                     " during packet capture")
             else:
                 return packet_count
 
         elif pcap_type == 'data':
 
-            log.info("Getting total count of Data Packets...")
+            logger.info("Getting total count of Data Packets...")
             try:
                 packet_count = self.ixNet.getAttribute(captureObj, '-dataPacketCounter')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting total contol packets"
+                logger.error(e)
+                raise AssertionError("Error while getting total contol packets"
                                     " during packet capture")
             else:
                 return packet_count
 
 
-    @BaseConnection.locked
     @isconnected
     def get_packet_capture_data(self, port_name):
         '''Search inside packet collected from pcap for specific data'''
@@ -1785,36 +1568,35 @@ class Ixia(TrafficGen):
         captureObj = self.get_ixia_virtual_port_capture(port_name=port_name)
 
         # Get current packet stack
-        log.info("Getting packet capture stack on port '{}".format(port_name))
+        logger.info("Getting packet capture stack on port '{}".format(port_name))
         try:
             current_packet = self.ixNet.getList(captureObj, 'currentPacket')[0]
             status = self.ixNet.execute('getPacketFromDataCapture', current_packet, 11)
             stacklist = self.ixNet.getList(current_packet, 'stack')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while getting packet capture stack")
+            logger.error(e)
+            raise AssertionError("Error while getting packet capture stack")
 
         # Get information inside packet capture stack
-        log.info("Extracting packet capture data")
+        logger.info("Extracting packet capture data")
 
         for stack in stacklist:
             try:
                 # Get name of stack
                 stack_name = self.ixNet.getAttribute(stack, "-displayName")
-                log.info(banner(stack_name))
+                logger.info(stack_name))
 
                 # List of all the elements within data capture
                 for field in self.ixNet.getList(stack, 'field'):
                     # Get the value of the field
                     name = self.ixNet.getAttribute(field, "-displayName")
                     value = self.ixNet.getAttribute(field, "-fieldValue")
-                    log.info("{n} : {v}".format(n=name, v=value))
+                    logger.info("{n} : {v}".format(n=name, v=value))
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while extracting data of packet capture")
+                logger.error(e)
+                raise AssertionError("Error while extracting data of packet capture")
 
 
-    @BaseConnection.locked
     @isconnected
     def save_packet_capture_file(self, port_name, pcap_type, filename, directory='C:/Results'):
         '''Save packet capture file as specified filename to desired location'''
@@ -1827,14 +1609,14 @@ class Ixia(TrafficGen):
             'control': 'SW',
             }
 
-        log.info("Saving packet capture file...")
+        logger.info("Saving packet capture file...")
         try:
             # Save file to C:
             assert self.ixNet.execute('saveCapture', directory, '_{}'.\
                                                 format(filename)) == _PASS
         except AssertionError as e:
-            log.info(e)
-            raise GenieTgnError("Unable to save packet capture file as '{}'".\
+            logger.info(e)
+            raise AssertionError("Unable to save packet capture file as '{}'".\
                                                             format(filename))
 
         # Return pcap file to caller
@@ -1842,19 +1624,18 @@ class Ixia(TrafficGen):
             format(port_name=port_name, pcap=pcap_dict[pcap_type], f=filename)
 
 
-    @BaseConnection.locked
     @isconnected
     def export_packet_capture_file(self, src_file, dest_file):
         '''Export packet capture file as specified filename to desired location'''
 
-        log.info("Exporting packet capture file...")
+        logger.info("Exporting packet capture file...")
         try:
             self.ixNet.execute('copyFile',
                                 self.ixNet.readFrom(src_file, '-ixNetRelative'),
                                 self.ixNet.writeTo(dest_file, '-overwrite'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to copy '{s}' to '{d}'".\
+            logger.error(e)
+            raise AssertionError("Unable to copy '{s}' to '{d}'".\
                                                 format(s=src_file, d=dest_file))
 
 
@@ -1862,7 +1643,6 @@ class Ixia(TrafficGen):
     #                        Traffic Item (Stream)                             #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_stream_names(self):
         '''Returns a list of all traffic stream names present in current configuration'''
@@ -1875,15 +1655,14 @@ class Ixia(TrafficGen):
             for item in self.get_traffic_stream_objects():
                 traffic_streams.append(self.ixNet.getAttribute(item, '-name'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving traffic streams from "
+            logger.error(e)
+            raise AssertionError("Error while retrieving traffic streams from "
                                 "configuration.")
         else:
             # Return to caller
             return traffic_streams
 
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_stream_objects(self):
         '''Returns a list of all traffic stream objects present in current configuration'''
@@ -1892,12 +1671,11 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getList('/traffic', 'trafficItem')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving traffic streams from "
+            logger.error(e)
+            raise AssertionError("Error while retrieving traffic streams from "
                                 "configuration.")
 
 
-    @BaseConnection.locked
     @isconnected
     def find_traffic_stream_object(self, traffic_stream):
         '''Finds the given stream name's traffic stream object'''
@@ -1912,18 +1690,17 @@ class Ixia(TrafficGen):
                     ti_obj = item
                     break
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get traffic stream object name")
+                logger.error(e)
+                raise AssertionError("Unable to get traffic stream object name")
 
         # Return to caller
         if ti_obj:
             return ti_obj
         else:
-            raise GenieTgnError("Unable to find ::ixNet:: object for traffic "
+            raise AssertionError("Unable to find ::ixNet:: object for traffic "
                                 "stream '{}'".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_stream_attribute(self, traffic_stream, attribute):
         '''Returns the specified attribute for the given traffic stream'''
@@ -1938,17 +1715,16 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getAttribute(ti_obj, '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get '{a}' for traffic stream '{t}'".\
+            logger.error(e)
+            raise AssertionError("Unable to get '{a}' for traffic stream '{t}'".\
                                 format(a=attribute, t=traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def start_traffic_stream(self, traffic_stream, check_stream=True, wait_time=15):
         '''Start specific traffic stream on Ixia'''
 
-        log.info(banner("Starting L2/L3 traffic for traffic stream '{}'".\
+        logger.info("Starting L2/L3 traffic for traffic stream '{}'".\
                         format(traffic_stream)))
 
         # Find traffic stream object from stream name
@@ -1958,47 +1734,46 @@ class Ixia(TrafficGen):
             # Start traffic for this stream
             self.ixNet.execute('startStatelessTraffic', ti_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while starting traffic for traffic"
+            logger.error(e)
+            raise AssertionError("Error while starting traffic for traffic"
                                 " stream '{}'".format(traffic_stream))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after starting traffic stream"
+        logger.info("Waiting for '{t}' seconds after starting traffic stream"
                     " '{s}'".format(t=wait_time, s=traffic_stream))
         time.sleep(wait_time)
 
         if check_stream:
             # Verify traffic stream state is now 'started'
-            log.info("Verify traffic stream '{}' state is now 'started'".\
+            logger.info("Verify traffic stream '{}' state is now 'started'".\
                         format(traffic_stream))
             try:
                 assert 'started' == self.get_traffic_stream_attribute(traffic_stream=traffic_stream, attribute='state')
             except AssertionError as e:
-                raise GenieTgnError("Traffic stream '{}' state is not 'started'".\
+                raise AssertionError("Traffic stream '{}' state is not 'started'".\
                                     format(traffic_stream))
             else:
-                log.info("Traffic stream '{}' state is 'started'".format(traffic_stream))
+                logger.info("Traffic stream '{}' state is 'started'".format(traffic_stream))
 
             # Verify Tx Frame Rate for this stream is > 0 after starting it
-            log.info("Verify Tx Frame Rate > 0 for traffic stream '{}'".\
+            logger.info("Verify Tx Frame Rate > 0 for traffic stream '{}'".\
                         format(traffic_stream))
             try:
                 assert float(self.get_traffic_items_statistics_data(traffic_stream=traffic_stream, traffic_data_field='Tx Frame Rate')) > 0.0
             except AssertionError as e:
-                raise GenieTgnError("Tx Frame Rate is not greater than 0 after "
+                raise AssertionError("Tx Frame Rate is not greater than 0 after "
                                     "starting traffic for traffic stream '{}'".\
                                     format(traffic_stream))
             else:
-                log.info("Tx Frame Rate is greater than 0 after starting traffic "
+                logger.info("Tx Frame Rate is greater than 0 after starting traffic "
                             "for traffic stream '{}'".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_traffic_stream(self, traffic_stream, wait_time=15):
         '''Stop specific traffic stream on Ixia'''
 
-        log.info(banner("Stopping L2/L3 traffic for traffic stream '{}'".\
+        logger.info("Stopping L2/L3 traffic for traffic stream '{}'".\
                         format(traffic_stream)))
 
         # Find traffic stream object from stream name
@@ -2008,46 +1783,45 @@ class Ixia(TrafficGen):
             # Stop traffic fo this stream
             self.ixNet.execute('stopStatelessTraffic', ti_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while stopping traffic for traffic"
+            logger.error(e)
+            raise AssertionError("Error while stopping traffic for traffic"
                                 " stream '{}'".format(traffic_stream))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after stopping traffic stream"
+        logger.info("Waiting for '{t}' seconds after stopping traffic stream"
                     " '{s}'".format(t=wait_time, s=traffic_stream))
         time.sleep(wait_time)
 
         # Verify traffic stream state is now 'stopped'
-        log.info("Verify traffic stream '{}' state is now 'stopped'".\
+        logger.info("Verify traffic stream '{}' state is now 'stopped'".\
                     format(traffic_stream))
         try:
             assert 'stopped' == self.get_traffic_stream_attribute(traffic_stream=traffic_stream, attribute='state')
         except AssertionError as e:
-            raise GenieTgnError("Traffic stream '{}' state is not 'stopped'".\
+            raise AssertionError("Traffic stream '{}' state is not 'stopped'".\
                                 format(traffic_stream))
         else:
-            log.info("Traffic stream '{}' state is 'stopped'".format(traffic_stream))
+            logger.info("Traffic stream '{}' state is 'stopped'".format(traffic_stream))
 
         # Verify Tx Frame Rate for this stream is > 0 after starting it
-        log.info("Verify Tx Frame Rate == 0 for traffic stream '{}'".\
+        logger.info("Verify Tx Frame Rate == 0 for traffic stream '{}'".\
                     format(traffic_stream))
         try:
             assert float(self.get_traffic_items_statistics_data(traffic_stream=traffic_stream, traffic_data_field='Tx Frame Rate')) == 0.0
         except AssertionError as e:
-            raise GenieTgnError("Tx Frame Rate is greater than 0 after "
+            raise AssertionError("Tx Frame Rate is greater than 0 after "
                                 "stopping traffic for traffic stream '{}'".\
                                 format(traffic_stream))
         else:
-            log.info("Tx Frame Rate == 0 after stopping traffic for traffic "
+            logger.info("Tx Frame Rate == 0 after stopping traffic for traffic "
                         "stream '{}'".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def generate_traffic_stream(self, traffic_stream, wait_time=15):
         '''Generate traffic for a given traffic stream'''
 
-        log.info(banner("Generating L2/L3 traffic for traffic stream '{}'".\
+        logger.info("Generating L2/L3 traffic for traffic stream '{}'".\
                         format(traffic_stream)))
 
         # Find traffic stream object from stream name
@@ -2057,35 +1831,34 @@ class Ixia(TrafficGen):
         try:
             self.ixNet.execute('generate', ti_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while generating traffic for traffic "
+            logger.error(e)
+            raise AssertionError("Error while generating traffic for traffic "
                                 "stream '{}'".format(traffic_stream))
 
-        # Unset "GENIE" view
-        self._genie_view = None
-        self._genie_page = None
+        # Unset Robot view
+        self._robot_view = None
+        self._robot_page = None
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after generating traffic stream"
+        logger.info("Waiting for '{t}' seconds after generating traffic stream"
                     " '{s}'".format(t=wait_time, s=traffic_stream))
         time.sleep(wait_time)
 
         # Check if traffic is in 'unapplied' state
-        log.info("Checking if traffic is in 'unapplied' state...")
+        logger.info("Checking if traffic is in 'unapplied' state...")
         try:
             assert self.get_traffic_attribute(attribute='state') == 'unapplied'
         except AssertionError as e:
-            log.error(e)
-            raise GenieTgnError("Traffic is not in 'unapplied' state")
+            logger.error(e)
+            raise AssertionError("Traffic is not in 'unapplied' state")
         else:
-            log.info("Traffic is in 'unapplied' state")
+            logger.info("Traffic is in 'unapplied' state")
 
 
     #--------------------------------------------------------------------------#
     #                       Traffic Item Statistics                            #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_items_statistics_data(self, traffic_stream, traffic_data_field):
         '''Get value of traffic_data_field of traffic_tream from "Traffic Item Statistics" '''
@@ -2096,13 +1869,12 @@ class Ixia(TrafficGen):
                     '::ixNet::OBJ-/statistics/view:"Traffic Item Statistics"',
                     traffic_stream, traffic_data_field)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving '{data}' for traffic "
+            logger.error(e)
+            raise AssertionError("Error while retrieving '{data}' for traffic "
                                 "stream '{stream}' from 'Traffic Item Statistics'".\
                                 format(data=traffic_data_field, stream=traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def find_traffic_item_statistics_page_obj(self):
         '''Returns the page object for "Traffic Item Statistics" view'''
@@ -2111,11 +1883,10 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getList('::ixNet::OBJ-/statistics/view:"Traffic Item Statistics"', 'page')[0]
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while finding 'Traffic Item Statistics' view page object")
+            logger.error(e)
+            raise AssertionError("Error while finding 'Traffic Item Statistics' view page object")
 
 
-    @BaseConnection.locked
     @isconnected
     def get_traffic_item_statistics_table(self, traffic_stats_columns=None):
         ''' Create table of "Traffic Item Statistics" view'''
@@ -2165,13 +1936,13 @@ class Ixia(TrafficGen):
         try:
             os.remove(csv_file)
         except Exception as e:
-            log.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
+            logger.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
         else:
-            log.info("Deleted CSV snapshot file '{}'".format(csv_file))
+            logger.info("Deleted CSV snapshot file '{}'".format(csv_file))
 
         # Align and print flow groups table in the logs
         traffic_items_table.align = "l"
-        log.info(traffic_items_table)
+        logger.info(traffic_items_table)
         self._traffic_statistics_table = traffic_items_table
 
         # Return to caller
@@ -2182,7 +1953,6 @@ class Ixia(TrafficGen):
     #                            Flow Groups                                   #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_flow_group_names(self, traffic_stream):
         '''Returns a list of all the flow group names for the given traffic stream present in current configuration'''
@@ -2195,8 +1965,8 @@ class Ixia(TrafficGen):
             for item in self.get_flow_group_objects():
                 flow_groups.append(self.ixNet.getAttribute(item, '-name'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving flow groups for traffic"
+            logger.error(e)
+            raise AssertionError("Error while retrieving flow groups for traffic"
                                 " stream '{}' from configuration.".\
                                 format(traffic_stream))
         else:
@@ -2204,7 +1974,6 @@ class Ixia(TrafficGen):
             return flow_groups
 
 
-    @BaseConnection.locked
     @isconnected
     def get_flow_group_objects(self, traffic_stream):
         '''Returns a list of flow group objects for the given traffic stream present in current configuration'''
@@ -2216,12 +1985,11 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getList(ti_obj, 'highLevelStream')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Flow groups not found in configuration for "
+            logger.error(e)
+            raise AssertionError("Flow groups not found in configuration for "
                                 "traffic stream '{}'".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def find_flow_group_object(self, traffic_stream, flow_group):
         '''Finds the flow group object when given the flow group name and traffic stream'''
@@ -2236,18 +2004,17 @@ class Ixia(TrafficGen):
                     fg_obj = item
                     break
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get Quick Flow Group object name")
+                logger.error(e)
+                raise AssertionError("Unable to get Quick Flow Group object name")
 
         # Return to caller
         if fg_obj:
             return fg_obj
         else:
-            raise GenieTgnError("Unable to find ::ixNet:: object for Quick "
+            raise AssertionError("Unable to find ::ixNet:: object for Quick "
                                 "Flow Group '{}'".format(flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_flow_group_attribute(self, traffic_stream, flow_group, attribute):
         '''Returns the specified attribute for the given flow group of the traffic stream'''
@@ -2262,17 +2029,16 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getAttribute(fg_obj, '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get '{a}' for Quick Flow Group '{f}'".\
+            logger.error(e)
+            raise AssertionError("Unable to get '{a}' for Quick Flow Group '{f}'".\
                                 format(a=attribute, f=flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def start_flow_group(self, traffic_stream, flow_group, wait_time=15):
         '''Start given flow group under of traffic stream on Ixia'''
 
-        log.info(banner("Starting traffic for flow group '{}'".\
+        logger.info("Starting traffic for flow group '{}'".\
                         format(flow_group)))
 
         # Find flow group object from flow group name
@@ -2282,33 +2048,32 @@ class Ixia(TrafficGen):
             # Start traffic for this flow group
             self.ixNet.execute('startStatelessTraffic', fg_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while starting traffic for flow group"
+            logger.error(e)
+            raise AssertionError("Error while starting traffic for flow group"
                                 " '{}'".format(flow_group))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after starting traffic for flow "
+        logger.info("Waiting for '{t}' seconds after starting traffic for flow "
                     "group '{f}'".format(t=wait_time, f=flow_group))
         time.sleep(wait_time)
 
         # Verify flow group state is now 'started'
-        log.info("Verify flow group '{}' state is now 'started'".\
+        logger.info("Verify flow group '{}' state is now 'started'".\
                     format(flow_group))
         try:
             assert 'started' == self.get_flow_group_attribute(traffic_stream=traffic_stream, flow_group=flow_group, attribute='state')
         except AssertionError as e:
-            raise GenieTgnError("Flow group '{}' state is not 'started'".\
+            raise AssertionError("Flow group '{}' state is not 'started'".\
                                 format(flow_group))
         else:
-            log.info("Flow group '{}' state is 'started'".format(flow_group))
+            logger.info("Flow group '{}' state is 'started'".format(flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_flow_group(self, traffic_stream, flow_group, wait_time=15):
         '''Stop given flow group under of traffic stream on Ixia'''
 
-        log.info(banner("Stopping traffic for flow group '{}'".\
+        logger.info("Stopping traffic for flow group '{}'".\
                         format(flow_group)))
 
         # Find flow group object from flow group name
@@ -2318,32 +2083,31 @@ class Ixia(TrafficGen):
             # Stop traffic for this flow group
             self.ixNet.execute('stopStatelessTraffic', fg_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while stopping traffic for flow group"
+            logger.error(e)
+            raise AssertionError("Error while stopping traffic for flow group"
                                 " '{}'".format(flow_group))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after stopping traffic for flow "
+        logger.info("Waiting for '{t}' seconds after stopping traffic for flow "
                     "group '{f}'".format(t=wait_time, f=flow_group))
         time.sleep(wait_time)
 
         # Verify flow group state is now 'stopped'
-        log.info("Verify flow group '{}' state is now 'stopped'".\
+        logger.info("Verify flow group '{}' state is now 'stopped'".\
                     format(flow_group))
         try:
             assert 'stopped' == self.get_flow_group_attribute(traffic_stream=traffic_stream, flow_group=flow_group, attribute='state')
         except AssertionError as e:
-            raise GenieTgnError("Flow group '{}' state is not 'stopped'".\
+            raise AssertionError("Flow group '{}' state is not 'stopped'".\
                                 format(flow_group))
         else:
-            log.info("Flow group '{}' state is 'stopped'".format(flow_group))
+            logger.info("Flow group '{}' state is 'stopped'".format(flow_group))
 
 
     #--------------------------------------------------------------------------#
     #                          Quick Flow Groups                               #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_quick_flow_group_names(self):
         '''Returns a list of all the Quick Flow Group names present in current configuration'''
@@ -2356,15 +2120,14 @@ class Ixia(TrafficGen):
             for item in self.get_quick_flow_group_objects():
                 quick_flow_groups.append(self.ixNet.getAttribute(item, '-name'))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving Quick Flow Groups from "
+            logger.error(e)
+            raise AssertionError("Error while retrieving Quick Flow Groups from "
                                 "configuration.")
         else:
             # Return to caller
             return quick_flow_groups
 
 
-    @BaseConnection.locked
     @isconnected
     def get_quick_flow_group_objects(self):
         '''Returns a list of all Quick Flow Group objects present in current configuration'''
@@ -2379,8 +2142,8 @@ class Ixia(TrafficGen):
                     qfg_traffic_item = item
                     break
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get Quick Flow Group "
+                logger.error(e)
+                raise AssertionError("Unable to get Quick Flow Group "
                                     "corresponding 'traffic stream' object")
 
         # Return list of Quick Flow Group highLevelStream objects
@@ -2388,13 +2151,12 @@ class Ixia(TrafficGen):
             try:
                 return self.ixNet.getList(qfg_traffic_item, 'highLevelStream')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Quick Flow Groups not found in configuration")
+                logger.error(e)
+                raise AssertionError("Quick Flow Groups not found in configuration")
         else:
-            raise GenieTgnError("Quick Flow Groups not found in configuration")
+            raise AssertionError("Quick Flow Groups not found in configuration")
 
 
-    @BaseConnection.locked
     @isconnected
     def find_quick_flow_group_object(self, quick_flow_group):
         '''Finds the Quick Flow Group object when given the Quick Flow Group name'''
@@ -2409,18 +2171,17 @@ class Ixia(TrafficGen):
                     qfg_obj = item
                     break
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get Quick Flow Group object name")
+                logger.error(e)
+                raise AssertionError("Unable to get Quick Flow Group object name")
 
         # Return to caller
         if qfg_obj:
             return qfg_obj
         else:
-            raise GenieTgnError("Unable to find ::ixNet:: object for Quick "
+            raise AssertionError("Unable to find ::ixNet:: object for Quick "
                                 "Flow Group '{}'".format(quick_flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_quick_flow_group_attribute(self, quick_flow_group, attribute):
         '''Returns the specified attribute for the given Quick Flow Group'''
@@ -2435,17 +2196,16 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getAttribute(qfg_obj, '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get '{a}' for Quick Flow Group '{q}'".\
+            logger.error(e)
+            raise AssertionError("Unable to get '{a}' for Quick Flow Group '{q}'".\
                                 format(a=attribute, q=quick_flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def start_quick_flow_group(self, quick_flow_group, wait_time=15):
         '''Start given Quick Flow Group on Ixia'''
 
-        log.info(banner("Starting traffic for Quick Flow Group '{}'".\
+        logger.info("Starting traffic for Quick Flow Group '{}'".\
                         format(quick_flow_group)))
 
         # Find flow group object from flow group name
@@ -2455,34 +2215,33 @@ class Ixia(TrafficGen):
             # Start traffic for this Quick Flow Group
             self.ixNet.execute('startStatelessTraffic', qfg_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while starting traffic for Quick Flow "
+            logger.error(e)
+            raise AssertionError("Error while starting traffic for Quick Flow "
                                 "Group '{}'".format(quick_flow_group))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after starting traffic for Quick "
+        logger.info("Waiting for '{t}' seconds after starting traffic for Quick "
                     "Flow Group '{q}'".format(t=wait_time, q=quick_flow_group))
         time.sleep(wait_time)
 
         # Verify Quick Flow Group state is now 'started'
-        log.info("Verify Quick Flow Group '{}' state is now 'started'".\
+        logger.info("Verify Quick Flow Group '{}' state is now 'started'".\
                     format(quick_flow_group))
         try:
             assert 'started' == self.get_quick_flow_group_attribute(quick_flow_group=quick_flow_group, attribute='state')
         except AssertionError as e:
-            raise GenieTgnError("Quick Flow Group '{}' state is not 'started'".\
+            raise AssertionError("Quick Flow Group '{}' state is not 'started'".\
                                 format(quick_flow_group))
         else:
-            log.info("Quick Flow Group '{}' state is 'started'".\
+            logger.info("Quick Flow Group '{}' state is 'started'".\
                         format(quick_flow_group))
 
 
-    @BaseConnection.locked
     @isconnected
     def stop_quick_flow_group(self, quick_flow_group, wait_time=15):
         '''Stop given Quick Flow Group on Ixia'''
 
-        log.info(banner("Stopping traffic for Quick Flow Group '{}'".\
+        logger.info("Stopping traffic for Quick Flow Group '{}'".\
                         format(quick_flow_group)))
 
         # Find flow group object from flow group name
@@ -2492,25 +2251,25 @@ class Ixia(TrafficGen):
             # Stop traffic for this Quick Flow Group
             self.ixNet.execute('stopStatelessTraffic', qfg_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while stopping traffic for Quick Flow "
+            logger.error(e)
+            raise AssertionError("Error while stopping traffic for Quick Flow "
                                 "Group '{}'".format(quick_flow_group))
 
         # Wait for user specified interval
-        log.info("Waiting for '{t}' seconds after stopping traffic for Quick "
+        logger.info("Waiting for '{t}' seconds after stopping traffic for Quick "
                     "Flow Group '{q}'".format(t=wait_time, q=quick_flow_group))
         time.sleep(wait_time)
 
         # Verify Quick Flow Group state is now 'stopped'
-        log.info("Verify Quick Flow Group '{}' state is now 'stopped'".\
+        logger.info("Verify Quick Flow Group '{}' state is now 'stopped'".\
                     format(quick_flow_group))
         try:
             assert 'stopped' == self.get_quick_flow_group_attribute(quick_flow_group=quick_flow_group, attribute='state')
         except AssertionError as e:
-            raise GenieTgnError("Quick Flow Group '{}' state is not 'stopped'".\
+            raise AssertionError("Quick Flow Group '{}' state is not 'stopped'".\
                                 format(quick_flow_group))
         else:
-            log.info("Quick Flow Group '{}' state is 'stopped'".\
+            logger.info("Quick Flow Group '{}' state is 'stopped'".\
                         format(quick_flow_group))
 
 
@@ -2518,7 +2277,6 @@ class Ixia(TrafficGen):
     #                          Flow Statistics                                 #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def get_flow_statistics_data(self, traffic_stream, flow_data_field):
         '''Get value of flow_data_field of traffic_tream from "Flow Statistics" '''
@@ -2529,14 +2287,13 @@ class Ixia(TrafficGen):
                             '::ixNet::OBJ-/statistics/view:"Flow Statistics"',
                             traffic_stream, flow_data_field)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while retrieving '{data}' for traffic "
+            logger.error(e)
+            raise AssertionError("Error while retrieving '{data}' for traffic "
                                 "stream '{stream}' from 'Flow Statistics'".\
                                 format(data=flow_data_field,
                                         stream=traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def find_flow_statistics_page_obj(self):
         '''Returns the page object for "Flow Statistics View"'''
@@ -2545,11 +2302,10 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getList('::ixNet::OBJ-/statistics/view:"Flow Statistics"', 'page')[0]
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while finding 'Flow Statistics' view page object")
+            logger.error(e)
+            raise AssertionError("Error while finding 'Flow Statistics' view page object")
 
 
-    @BaseConnection.locked
     @isconnected
     def check_flow_groups_loss(self, traffic_streams=[], max_outage=120,
                                 loss_tolerance=15, rate_tolerance=5,
@@ -2600,7 +2356,7 @@ class Ixia(TrafficGen):
 
             # Check row for loss/outage within tolerance
             if verbose:
-                log.info(banner("Checking flow group: '{t} | {vlan} | {pair}'".\
+                logger.info("Checking flow group: '{t} | {vlan} | {pair}'".\
                                 format(t=flow_group_name, vlan=vlan_id, pair=src_dest_port_pair)))
 
             # 1- Verify current loss % is less than tolerance threshold
@@ -2612,7 +2368,7 @@ class Ixia(TrafficGen):
             # Check traffic loss
             if float(loss_percentage) <= float(loss_tolerance):
                 if verbose:
-                    log.info("* Current traffic loss of {l}% is within"
+                    logger.info("* Current traffic loss of {l}% is within"
                                 " maximum expected loss tolerance of {t}%".\
                                 format(t=loss_tolerance, l=loss_percentage))
                 loss_check = True
@@ -2620,7 +2376,7 @@ class Ixia(TrafficGen):
                 loss_check = False
                 result_failed = True
                 if verbose:
-                    log.error("* Current traffic loss of {l}% is *NOT* within"
+                    logger.error("* Current traffic loss of {l}% is *NOT* within"
                                 " maximum expected loss tolerance of {t}%".\
                                 format(t=loss_tolerance, l=loss_percentage))
 
@@ -2630,7 +2386,7 @@ class Ixia(TrafficGen):
             rx_rate = row.get_string(fields=["Rx Frame Rate"]).strip()
             if abs(float(tx_rate) - float(rx_rate)) <= float(rate_tolerance):
                 if verbose:
-                    log.info("* Difference between Tx Rate '{t}' and Rx Rate"
+                    logger.info("* Difference between Tx Rate '{t}' and Rx Rate"
                                 " '{r}' is within expected maximum rate loss"
                                 " threshold of '{m}' packets per second".\
                             format(t=tx_rate, r=rx_rate, m=rate_tolerance))
@@ -2639,7 +2395,7 @@ class Ixia(TrafficGen):
                 rate_check = False
                 result_failed = True
                 if verbose:
-                    log.error("* Difference between Tx Rate '{t}' and Rx Rate"
+                    logger.error("* Difference between Tx Rate '{t}' and Rx Rate"
                                 " '{r}' is *NOT* within expected maximum rate loss"
                                 " threshold of '{m}' packets per second".\
                             format(t=tx_rate, r=rx_rate, m=rate_tolerance))
@@ -2659,7 +2415,7 @@ class Ixia(TrafficGen):
             # Check outage
             if float(outage_seconds) <= float(max_outage):
                 if verbose:
-                    log.info("* Traffic outage of '{o}' seconds is within "
+                    logger.info("* Traffic outage of '{o}' seconds is within "
                                 "expected maximum outage threshold of '{s}' seconds".\
                                 format(o=outage_seconds, s=max_outage))
                 outage_check = True
@@ -2667,7 +2423,7 @@ class Ixia(TrafficGen):
                 outage_check = False
                 result_failed = True
                 if verbose:
-                    log.error("* Traffic outage of '{o}' seconds is *NOT* within "
+                    logger.error("* Traffic outage of '{o}' seconds is *NOT* within "
                                 "expected maximum outage threshold of '{s}' seconds".\
                                 format(o=outage, s=max_outage))
 
@@ -2691,7 +2447,7 @@ class Ixia(TrafficGen):
         # Align and print flow groups table in the logs
         flow_group_table.align = "l"
         if display:
-            log.info(flow_group_table)
+            logger.info(flow_group_table)
         self._flow_statistics_table = flow_group_table
 
         # Export the file if user requested
@@ -2701,8 +2457,8 @@ class Ixia(TrafficGen):
                                     self.ixNet.readFrom(csv_file, '-ixNetRelative'),
                                     self.ixNet.writeTo(export_to_filename, '-overwrite'))
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to export 'Flow Statistics' CSV "
+                logger.error(e)
+                raise AssertionError("Unable to export 'Flow Statistics' CSV "
                                     "snapshot file to '{}'".\
                                     format(export_to_filename))
 
@@ -2710,23 +2466,22 @@ class Ixia(TrafficGen):
         try:
             os.remove(csv_file)
         except Exception as e:
-            log.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
+            logger.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
         else:
-            log.info("Deleted CSV snapshot file '{}'".format(csv_file))
+            logger.info("Deleted CSV snapshot file '{}'".format(csv_file))
 
         # Check if iteration required based on results
         if not result_failed:
-            log.info("\nSuccessfully verified traffic outages/loss is within "
+            logger.info("\nSuccessfully verified traffic outages/loss is within "
                         "tolerance for all flow groups")
         else:
-            raise GenieTgnError("\nUnexpected traffic outage/loss is observed "
+            raise AssertionError("\nUnexpected traffic outage/loss is observed "
                                 "for flow groups")
 
         # Return table to caller
         return flow_group_table
 
 
-    @BaseConnection.locked
     @isconnected
     def get_flow_statistics_table(self):
         '''Returns the last Flow Statistics table created'''
@@ -2734,7 +2489,6 @@ class Ixia(TrafficGen):
         return self._flow_statistics_table
 
 
-    @BaseConnection.locked
     @isconnected
     def create_flow_statistics_table(self, flow_stats_columns=None, display=True, export_to_filename=""):
         ''' Create table of "Flow Statistics" view'''
@@ -2785,9 +2539,9 @@ class Ixia(TrafficGen):
         try:
             os.remove(csv_file)
         except Exception as e:
-            log.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
+            logger.error("Unable to remove CSV snapshot file '{}'".format(csv_file))
         else:
-            log.info("Deleted CSV snapshot file '{}'".format(csv_file))
+            logger.info("Deleted CSV snapshot file '{}'".format(csv_file))
 
         # Align and set class object for the table
         flow_stats_table.align = "l"
@@ -2795,7 +2549,7 @@ class Ixia(TrafficGen):
 
         # Print if user requested
         if display:
-            log.info(flow_stats_table)
+            logger.info(flow_stats_table)
 
         # Export the file if user requested
         if export_to_filename:
@@ -2804,8 +2558,8 @@ class Ixia(TrafficGen):
                                     self.ixNet.readFrom(csv_file, '-ixNetRelative'),
                                     self.ixNet.writeTo(export_to_filename, '-overwrite'))
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to export 'Flow Statistics' CSV "
+                logger.error(e)
+                raise AssertionError("Unable to export 'Flow Statistics' CSV "
                                     "snapshot file to '{}'".\
                                     format(export_to_filename))
 
@@ -2818,7 +2572,6 @@ class Ixia(TrafficGen):
     #                     Line / Packet / Layer2-bit Rate                      #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def set_line_rate(self, traffic_stream, rate, flow_group='', stop_traffic_time=15, generate_traffic_time=15, apply_traffic_time=15, start_traffic=True, start_traffic_time=15):
         '''Set the line rate for given traffic stream or given flow group of a traffic stream'''
@@ -2827,7 +2580,7 @@ class Ixia(TrafficGen):
         try:
             assert rate in range(100)
         except AssertionError as e:
-            raise GenieTgnError("Invalid input rate={} provided. Line rate must"
+            raise AssertionError("Invalid input rate={} provided. Line rate must"
                                 " be between 0 to 100%".format(rate))
 
         # Get traffic item object from stream name
@@ -2835,7 +2588,7 @@ class Ixia(TrafficGen):
 
         if flow_group:
             # Set the line rate for given flow group of this traffic item
-            log.info(banner("Setting flow group '{f}' of traffic stream '{t}' "
+            logger.info("Setting flow group '{f}' of traffic stream '{t}' "
                             "line rate to '{r}' %".format(f=flow_group,
                                                         t=traffic_stream,
                                                         r=rate)))
@@ -2850,18 +2603,18 @@ class Ixia(TrafficGen):
                                                 '-type', 'percentLineRate')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while changing flow group '{f}' of "
+                logger.error(e)
+                raise AssertionError("Error while changing flow group '{f}' of "
                                     "traffic stream '{t}' line rate to '{r}' %".\
                                     format(f=flow_group, t=traffic_stream, r=rate))
             else:
-                log.info("Successfully changed flow group '{f}' of traffic "
+                logger.info("Successfully changed flow group '{f}' of traffic "
                             "stream '{t}' line rate to '{r}'".format(f=flow_group,
                                                                     t=traffic_stream,
                                                                     r=rate))
         else:
             # Set the line rate for the entire traffic stream
-            log.info(banner("Setting traffic stream '{t}' line rate to '{r}' %".\
+            logger.info("Setting traffic stream '{t}' line rate to '{r}' %".\
                             format(t=traffic_stream, r=rate)))
 
             # Initial state
@@ -2877,8 +2630,8 @@ class Ixia(TrafficGen):
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -2888,12 +2641,12 @@ class Ixia(TrafficGen):
                                                     '-type', 'percentLineRate')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while changing traffic stream "
+                    logger.error(e)
+                    raise AssertionError("Error while changing traffic stream "
                                         "'{t}' line rate to '{r}' %".\
                                         format(t=traffic_stream, r=rate))
                 else:
-                    log.info("Successfully changed traffic stream '{t}' line "
+                    logger.info("Successfully changed traffic stream '{t}' line "
                                 "rate to '{r}' %".format(t=traffic_stream, r=rate))
 
             # Generate traffic
@@ -2910,7 +2663,6 @@ class Ixia(TrafficGen):
                     self.start_traffic_stream(traffic_stream=traffic_stream, wait_time=start_traffic_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def set_packet_rate(self, traffic_stream, rate, flow_group='', stop_traffic_time=15, generate_traffic_time=15, apply_traffic_time=15, start_traffic=True, start_traffic_time=15):
         '''Set the packet rate for given traffic stream or given flow group of a traffic stream'''
@@ -2920,7 +2672,7 @@ class Ixia(TrafficGen):
 
         if flow_group:
             # Set the packet rate for given flow group of this traffic item
-            log.info(banner("Setting flow group '{f}' of traffic stream '{t}' "
+            logger.info("Setting flow group '{f}' of traffic stream '{t}' "
                             "packet rate to '{r}' frames per second".\
                             format(f=flow_group, t=traffic_stream, r=rate)))
 
@@ -2934,17 +2686,17 @@ class Ixia(TrafficGen):
                                                 '-type', 'framesPerSecond')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while changing flow group '{f}' of "
+                logger.error(e)
+                raise AssertionError("Error while changing flow group '{f}' of "
                                     "traffic stream '{t}' packet rate to '{r}'".\
                                     format(f=flow_group, t=traffic_stream, r=rate))
             else:
-                log.info("Successfully changed flow group '{f}' of traffic "
+                logger.info("Successfully changed flow group '{f}' of traffic "
                             "stream '{t}' packet rate to '{r}' frames per second".\
                             format(f=flow_group, t=traffic_stream, r=rate))
         else:
             # Set the packet rate for the entire traffic stream
-            log.info(banner("Setting traffic stream '{t}' packet rate to '{r}'"
+            logger.info("Setting traffic stream '{t}' packet rate to '{r}'"
                             " frames per second".format(t=traffic_stream, r=rate)))
 
             # Initial state
@@ -2960,8 +2712,8 @@ class Ixia(TrafficGen):
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -2971,12 +2723,12 @@ class Ixia(TrafficGen):
                                                     '-type', 'framesPerSecond')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while changing traffic stream "
+                    logger.error(e)
+                    raise AssertionError("Error while changing traffic stream "
                                         "'{t}' packet rate to '{r}' frames per "
                                         "second".format(t=traffic_stream, r=rate))
                 else:
-                    log.info("Successfully changed traffic stream '{t}' packet "
+                    logger.info("Successfully changed traffic stream '{t}' packet "
                                 "rate to '{r}' frames per second".\
                                 format(t=traffic_stream, r=rate))
 
@@ -2994,7 +2746,6 @@ class Ixia(TrafficGen):
                     self.start_traffic_stream(traffic_stream=traffic_stream, wait_time=start_traffic_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def set_layer2_bit_rate(self, traffic_stream, rate, rate_unit, flow_group='', stop_traffic_time=15, generate_traffic_time=15, apply_traffic_time=15, start_traffic=True, start_traffic_time=15):
         '''Set the Layer2 bit rate for given traffic stream or given flow group
@@ -3014,7 +2765,7 @@ class Ixia(TrafficGen):
         try:
             assert rate_unit in ['bps', 'Kbps', 'Mbps', 'Bps', 'KBps', 'MBps']
         except AssertionError as e:
-            raise GenieTgnError("Invalid unit '{}' passed in for layer2 bit rate".\
+            raise AssertionError("Invalid unit '{}' passed in for layer2 bit rate".\
                                 format(rate_unit))
 
         # Get traffic item object from stream name
@@ -3022,7 +2773,7 @@ class Ixia(TrafficGen):
 
         if flow_group:
             # Set the layer2 bit rate for given flow group of this traffic item
-            log.info(banner("Setting flow group '{f}' of traffic stream '{t}' "
+            logger.info("Setting flow group '{f}' of traffic stream '{t}' "
                             "layer2 bit rate to '{r}' {u}".format(f=flow_group,
                                                                     t=traffic_stream,
                                                                     r=rate,
@@ -3039,20 +2790,20 @@ class Ixia(TrafficGen):
                                                 '-type', 'bitsPerSecond')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while changing flow group '{f}' of "
+                logger.error(e)
+                raise AssertionError("Error while changing flow group '{f}' of "
                                     "traffic stream '{t}' layer2 bit rate to "
                                     "'{r}' {u}".format(f=flow_group,
                                                         t=traffic_stream,
                                                         r=rate,
                                                         u=rate_unit))
             else:
-                log.info("Successfully changed flow group '{f}' of traffic "
+                logger.info("Successfully changed flow group '{f}' of traffic "
                             "stream '{t}' layer2 bit rate to '{r}' {u}".\
                             format(f=flow_group, t=traffic_stream, r=rate, u=rate_unit))
         else:
             # Set the layer2 bit rate for the entire traffic stream
-            log.info(banner("Setting traffic stream '{t}' layer2 bit rate to"
+            logger.info("Setting traffic stream '{t}' layer2 bit rate to"
                             " '{r}' {u}".format(t=traffic_stream, r=rate, u=rate_unit)))
 
             # Initial state
@@ -3068,8 +2819,8 @@ class Ixia(TrafficGen):
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -3080,14 +2831,14 @@ class Ixia(TrafficGen):
                                                     '-type', 'bitsPerSecond')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while changing traffic stream "
+                    logger.error(e)
+                    raise AssertionError("Error while changing traffic stream "
                                         "'{t}' layer2 bit rate to '{r}' {u}".\
                                         format(t=traffic_stream,
                                                 r=rate,
                                                 u=rate_unit))
                 else:
-                    log.info("Successfully changed traffic stream '{t}' layer2 "
+                    logger.info("Successfully changed traffic stream '{t}' layer2 "
                                 "bit rate to '{r}' {u}".format(t=traffic_stream,
                                                             r=rate,
                                                             u=rate_unit))
@@ -3106,7 +2857,6 @@ class Ixia(TrafficGen):
                     self.start_traffic_stream(traffic_stream=traffic_stream, wait_time=start_traffic_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def set_packet_size_fixed(self, traffic_stream, packet_size, stop_traffic_time=15, generate_traffic_time=15, apply_traffic_time=15, start_traffic=True, start_traffic_time=15):
         '''Set the packet size for given traffic stream'''
@@ -3115,7 +2865,7 @@ class Ixia(TrafficGen):
         ti_obj = self.find_traffic_stream_object(traffic_stream=traffic_stream)
 
         # Set the packet size for the traffic stream
-        log.info(banner("Setting traffic stream '{t}' packet size to '{p}'".\
+        logger.info("Setting traffic stream '{t}' packet size to '{p}'".\
                         format(t=traffic_stream, p=packet_size)))
 
         # Initial state
@@ -3131,8 +2881,8 @@ class Ixia(TrafficGen):
         try:
             config_elements = self.ixNet.getList(ti_obj, 'configElement')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get config elements for traffic "
+            logger.error(e)
+            raise AssertionError("Unable to get config elements for traffic "
                                 "stream '{}'".format(traffic_stream))
 
         for config_element in config_elements:
@@ -3141,12 +2891,12 @@ class Ixia(TrafficGen):
                                                 '-fixedSize', packet_size)
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while changing traffic stream "
+                logger.error(e)
+                raise AssertionError("Error while changing traffic stream "
                                     "'{t}' packet size to '{p}'".\
                                     format(t=traffic_stream, p=packet_size))
             else:
-                log.info("Successfully changed traffic stream '{t}' packet "
+                logger.info("Successfully changed traffic stream '{t}' packet "
                             "size to '{p}'".format(t=traffic_stream, p=packet_size))
 
         # Generate traffic
@@ -3163,7 +2913,6 @@ class Ixia(TrafficGen):
                 self.start_traffic_stream(traffic_stream=traffic_stream, wait_time=start_traffic_time)
 
 
-    @BaseConnection.locked
     @isconnected
     def get_line_rate(self, traffic_stream, flow_group=''):
         '''Returns the line rate for given traffic stream or flow group'''
@@ -3184,31 +2933,31 @@ class Ixia(TrafficGen):
                                         '-type', 'percentLineRate')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting line rate for flow "
+                logger.error(e)
+                raise AssertionError("Error while getting line rate for flow "
                                     "group '{}'".format(flow_group))
 
             # Get the line rate
             try:
                 line_rate = self.ixNet.getAttribute(flowgroupObj, '-rate')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting line rate for flow "
+                logger.error(e)
+                raise AssertionError("Error while getting line rate for flow "
                                     "group '{}'".format(flow_group))
 
             # Return to caller
             if line_rate:
                 return line_rate
             else:
-                raise GenieTgnError("Unable to find line rate for flow "
+                raise AssertionError("Unable to find line rate for flow "
                                     "group '{}".format(flow_group))
         else:
             # Get config element object
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -3218,27 +2967,26 @@ class Ixia(TrafficGen):
                                             '-type', 'percentLineRate')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting line rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting line rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
                 # Get the line rate
                 try:
                     line_rate = self.ixNet.getAttribute(config_element + '/frameRate', '-rate')
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting line rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting line rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
             # Return to caller
             if line_rate:
                 return line_rate
             else:
-                raise GenieTgnError("Unable to find line rate for traffic "
+                raise AssertionError("Unable to find line rate for traffic "
                                     "stream '{}".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_packet_rate(self, traffic_stream, flow_group=''):
         '''Returns the packet rate for given traffic stream or flow group'''
@@ -3259,31 +3007,31 @@ class Ixia(TrafficGen):
                                         '-type', 'framesPerSecond')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting packet rate for flow "
+                logger.error(e)
+                raise AssertionError("Error while getting packet rate for flow "
                                     "group '{}'".format(flow_group))
 
             # Get the packet rate
             try:
                 packet_rate = self.ixNet.getAttribute(flowgroupObj, '-rate')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting packet rate for flow "
+                logger.error(e)
+                raise AssertionError("Error while getting packet rate for flow "
                                     "group '{}'".format(flow_group))
 
             # Return to caller
             if packet_rate:
                 return packet_rate
             else:
-                raise GenieTgnError("Unable to find packet rate for flow "
+                raise AssertionError("Unable to find packet rate for flow "
                                     "group '{}".format(flow_group))
         else:
             # Get config element object
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -3293,27 +3041,26 @@ class Ixia(TrafficGen):
                                             '-type', 'framesPerSecond')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting packet rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting packet rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
                 # Get the packet rate
                 try:
                     packet_rate = self.ixNet.getAttribute(config_element + '/frameRate', '-rate')
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting packet rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting packet rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
             # Return to caller
             if packet_rate:
                 return packet_rate
             else:
-                raise GenieTgnError("Unable to find packet rate for traffic "
+                raise AssertionError("Unable to find packet rate for traffic "
                                     "stream '{}".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_layer2_bit_rate(self, traffic_stream, flow_group=''):
         '''Returns the layer2 bit rate given traffic stream or flow group'''
@@ -3334,31 +3081,31 @@ class Ixia(TrafficGen):
                                         '-type', 'bitsPerSecond')
                 self.ixNet.commit()
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting layer2 bit rate for "
+                logger.error(e)
+                raise AssertionError("Error while getting layer2 bit rate for "
                                     "flow group '{}'".format(flow_group))
 
             # Get the layer2 bit rate
             try:
                 layer2bit_rate = self.ixNet.getAttribute(flowgroupObj, '-rate')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting layer2 bit rate for "
+                logger.error(e)
+                raise AssertionError("Error while getting layer2 bit rate for "
                                     "flow group '{}'".format(flow_group))
 
             # Return to caller
             if layer2bit_rate:
                 return layer2bit_rate
             else:
-                raise GenieTgnError("Unable to find layer2 bit rate for flow "
+                raise AssertionError("Unable to find layer2 bit rate for flow "
                                     "group '{}".format(flow_group))
         else:
             # Get config element object
             try:
                 config_elements = self.ixNet.getList(ti_obj, 'configElement')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get config elements for traffic "
+                logger.error(e)
+                raise AssertionError("Unable to get config elements for traffic "
                                     "stream '{}'".format(traffic_stream))
 
             for config_element in config_elements:
@@ -3368,27 +3115,26 @@ class Ixia(TrafficGen):
                                             '-type', 'bitsPerSecond')
                     self.ixNet.commit()
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting layer2 bit rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting layer2 bit rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
                 # Get the layer2 bit rate
                 try:
                     layer2bit_rate = self.ixNet.getAttribute(config_element + '/frameRate', '-rate')
                 except Exception as e:
-                    log.error(e)
-                    raise GenieTgnError("Error while getting layer2 bit rate for "
+                    logger.error(e)
+                    raise AssertionError("Error while getting layer2 bit rate for "
                                         "traffic stream '{}'".format(traffic_stream))
 
             # Return to caller
             if layer2bit_rate:
                 return layer2bit_rate
             else:
-                raise GenieTgnError("Unable to find packet rate for traffic "
+                raise AssertionError("Unable to find packet rate for traffic "
                                     "stream '{}".format(traffic_stream))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_packet_size(self, traffic_stream):
         '''Returns the packet size for given traffic stream'''
@@ -3403,23 +3149,23 @@ class Ixia(TrafficGen):
         try:
             config_elements = self.ixNet.getList(ti_obj, 'configElement')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get config elements for traffic "
+            logger.error(e)
+            raise AssertionError("Unable to get config elements for traffic "
                                 "stream '{}'".format(traffic_stream))
 
         for config_element in config_elements:
             try:
                 packet_size = self.ixNet.getAttribute(config_element + '/frameSize', '-fixedSize')
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Error while getting the packet size for"
+                logger.error(e)
+                raise AssertionError("Error while getting the packet size for"
                                     " '{p}'".format(t=traffic_stream))
 
         # Return to caller
         if packet_size:
             return packet_size
         else:
-            raise GenieTgnError("Unable to find packet rate for traffic "
+            raise AssertionError("Unable to find packet rate for traffic "
                                 "stream '{}".format(traffic_stream))
 
 
@@ -3427,7 +3173,6 @@ class Ixia(TrafficGen):
     #                               QuickTest                                  #
     #--------------------------------------------------------------------------#
 
-    @BaseConnection.locked
     @isconnected
     def find_quicktest_object(self, quicktest):
         '''Finds and returns the QuickTest object for the specific test'''
@@ -3436,7 +3181,7 @@ class Ixia(TrafficGen):
         try:
             assert quicktest in self.valid_quicktests
         except AssertionError as e:
-            raise GenieTgnError("Invalid QuickTest '{q}' provided.\nValid "
+            raise AssertionError("Invalid QuickTest '{q}' provided.\nValid "
                                 "options are {l}".format(q=quicktest, l=self.valid_quicktests))
 
         # Get QuickTest root
@@ -3444,15 +3189,15 @@ class Ixia(TrafficGen):
         try:
             qt_root = self.ixNet.getList(self.ixNet.getRoot(), 'quickTest')[0]
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get QuickTest root object")
+            logger.error(e)
+            raise AssertionError("Unable to get QuickTest root object")
 
         # Get list of QuickTests configured on Ixia
         try:
             qt_list = self.ixNet.getAttribute(qt_root, '-testIds')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get list of QuickTests configured")
+            logger.error(e)
+            raise AssertionError("Unable to get list of QuickTests configured")
 
         # Get specific QuickTest test
         qt_obj = None
@@ -3465,11 +3210,10 @@ class Ixia(TrafficGen):
         if qt_obj:
             return qt_obj
         else:
-            raise GenieTgnError("Unable to find ::ixNet:: object for QuickTest "
+            raise AssertionError("Unable to find ::ixNet:: object for QuickTest "
                                 "'{}'".format(quicktest))
 
 
-    @BaseConnection.locked
     @isconnected
     def get_quicktest_results_attribute(self, quicktest, attribute):
         '''Returns the value of the specified Quicktest results object attribute.'''
@@ -3484,7 +3228,7 @@ class Ixia(TrafficGen):
                                     'startTime',
                                     'duration']
         except AssertionError as e:
-            raise GenieTgnError("Invalid attribute '{}' provided for Quicktest "
+            raise AssertionError("Invalid attribute '{}' provided for Quicktest "
                                 "results".format(attribute))
 
         # Get QuickTest object
@@ -3494,25 +3238,24 @@ class Ixia(TrafficGen):
         try:
             return self.ixNet.getAttribute(qt_obj+'/results', '-{}'.format(attribute))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to get value of Quicktest results "
+            logger.error(e)
+            raise AssertionError("Unable to get value of Quicktest results "
                                 "attribute '{}'".format(attribute))
 
 
-    @BaseConnection.locked
     @isconnected
     def load_quicktest_configuration(self, configuration, wait_time=30):
         '''Load QuickTest configuration file'''
 
-        log.info(banner("Loading Quicktest configuration..."))
+        logger.info("Loading Quicktest configuration..."))
 
         # Load the QuickTest configuration file onto Ixia
         try:
             load_config = self.ixNet.execute('loadConfig',
                                                 self.ixNet.readFrom(configuration))
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to load Quicktest configuration file "
+            logger.error(e)
+            raise AssertionError("Unable to load Quicktest configuration file "
                                 "'{f}' onto device '{d}'".format(f=configuration,
                                 d=self.device.name)) from e
 
@@ -3520,109 +3263,108 @@ class Ixia(TrafficGen):
         try:
             assert load_config == _PASS
         except AssertionError as e:
-            log.error(load_config)
-            raise GenieTgnError("Unable to load Quicktest configuration file "
+            logger.error(load_config)
+            raise AssertionError("Unable to load Quicktest configuration file "
                                 "'{f}' onto device '{d}'".format(f=configuration,
                                 d=self.device.name)) from e
         else:
-            log.info("Successfully loaded Quicktest configuration file '{f}' "
+            logger.info("Successfully loaded Quicktest configuration file '{f}' "
                         "onto device '{d}'".format(f=configuration,
                         d=self.device.name))
 
         # Wait after loading configuration file
-        log.info("Waiting for '{}' seconds after loading configuration...".\
+        logger.info("Waiting for '{}' seconds after loading configuration...".\
                     format(wait_time))
         time.sleep(wait_time)
 
         # Verify traffic is in 'unapplied' state
-        log.info("Verify traffic is in 'unapplied' state after loading configuration")
+        logger.info("Verify traffic is in 'unapplied' state after loading configuration")
         try:
             assert self.get_traffic_attribute(attribute='state') == 'unapplied'
         except AssertionError as e:
-            raise GenieTgnError("Traffic is not in 'unapplied' state after "
+            raise AssertionError("Traffic is not in 'unapplied' state after "
                                 "loading configuration onto device '{}'".\
                                 format(self.device.name)) from e
         else:
-            log.info("Traffic in 'unapplied' state after loading configuration "
+            logger.info("Traffic in 'unapplied' state after loading configuration "
                         "onto device '{}'".format(self.device.name))
 
 
-    @BaseConnection.locked
     @isconnected
     def execute_quicktest(self, quicktest, apply_wait=60, exec_wait=1800, exec_interval=300, save_location="C:\\Users\\"):
         '''Execute specific RFC QuickTest'''
 
-        log.info(banner("Prepare execution of Quicktest '{}'...".\
+        logger.info("Prepare execution of Quicktest '{}'...".\
                         format(quicktest)))
 
         # Get QuickTest object
         qt_obj = self.find_quicktest_object(quicktest=quicktest)
 
         # Apply QuickTest configuration
-        log.info("Apply QuickTest '{}' configuration".format(quicktest))
+        logger.info("Apply QuickTest '{}' configuration".format(quicktest))
         try:
             apply_qt = self.ixNet.execute('apply', qt_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to apply traffic configuration for "
+            logger.error(e)
+            raise AssertionError("Unable to apply traffic configuration for "
                                 "QuickTest '{}'".format(quicktest))
 
         # Verify QuickTest configuration application passed
         try:
             assert apply_qt == _PASS
         except AssertionError as e:
-            log.error(apply_qt)
-            raise GenieTgnError("Unable to apply QuickTest '{}' configuration".\
+            logger.error(apply_qt)
+            raise AssertionError("Unable to apply QuickTest '{}' configuration".\
                                 format(quicktest))
         else:
-            log.info("Successfully applied QuickTest '{}' configuration".\
+            logger.info("Successfully applied QuickTest '{}' configuration".\
                         format(quicktest))
 
         # Wait after applying QuickTest configuration
-        log.info("Waiting '{}' seconds after applying QuickTest "
+        logger.info("Waiting '{}' seconds after applying QuickTest "
                     "configuration".format(apply_wait))
         time.sleep(apply_wait)
 
         # Enable QuickTest report
-        log.info("Enable QuickTest '{}' report generation".format(quicktest))
+        logger.info("Enable QuickTest '{}' report generation".format(quicktest))
         try:
             self.ixNet.setMultiAttribute('::ixNet::OBJ-/quickTest/globals',
                                             '-enableGenerateReportAfterRun', 'true',
                                             '-useDefaultRootPath', 'false',
                                             '-outputRootPath', save_location,
                                             '-titlePageComments',
-                                            "QuickTest {} Genie Test Result".\
+                                            "QuickTest {} Robot Test Result".\
                                             format(quicktest))
             self.ixNet.commit()
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Error while enabling PDF report genaration")
+            logger.error(e)
+            raise AssertionError("Error while enabling PDF report genaration")
         else:
-            log.info("Successfully enabled QuickTest '{}' report generation".\
+            logger.info("Successfully enabled QuickTest '{}' report generation".\
                         format(quicktest))
 
         # Start QuickTest execution
-        log.info("Start execution of QuickTest '{}'".format(quicktest))
+        logger.info("Start execution of QuickTest '{}'".format(quicktest))
         try:
             start_qt = self.ixNet.execute('start', qt_obj)
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start execution of Quicktest"
+            logger.error(e)
+            raise AssertionError("Unable to start execution of Quicktest"
                                 " '{}'".format(quicktest))
 
         # Verify QuickTest successfully started
         try:
             assert start_qt == _PASS
         except AssertionError as e:
-            log.error(start_qt)
-            raise GenieTgnError("Unable to start execution of QuickTest '{}'".\
+            logger.error(start_qt)
+            raise AssertionError("Unable to start execution of QuickTest '{}'".\
                                 format(quicktest))
         else:
-            log.info("Successfully started execution of QuickTest '{}'".\
+            logger.info("Successfully started execution of QuickTest '{}'".\
                         format(quicktest))
 
         # Poll until execution has completed
-        log.info("Poll until Quicktest '{}' execution completes".format(quicktest))
+        logger.info("Poll until Quicktest '{}' execution completes".format(quicktest))
         timeout = Timeout(max_time=exec_wait, interval=exec_interval)
         while timeout.iterate():
             if self.get_quicktest_results_attribute(quicktest=quicktest, attribute='isRunning') == 'false':
@@ -3632,38 +3374,37 @@ class Ixia(TrafficGen):
         duration = self.get_quicktest_results_attribute(quicktest=quicktest, attribute='duration')
         start_time = self.get_quicktest_results_attribute(quicktest=quicktest, attribute='startTime')
         result = self.get_quicktest_results_attribute(quicktest=quicktest, attribute='result')
-        log.info("Quicktest '{}' execution completed:".format(quicktest))
-        log.info("-> Test Duration = {d}\n"
+        logger.info("Quicktest '{}' execution completed:".format(quicktest))
+        logger.info("-> Test Duration = {d}\n"
                     "-> Start Time = {s}\n"
                     "-> Overall Result = {r}".\
                     format(q=quicktest, d=duration, s=start_time, r=result))
 
 
-    @BaseConnection.locked
     @isconnected
     def generate_export_quicktest_report(self, quicktest, report_wait=300, report_interval=60, export=True, dest_dir=runtime.directory, dest_file="TestReport.pdf"):
         '''Generate QuickTest PDF report and return the location'''
 
-        log.info(banner("Generating PDF report for Quicktest {}...".\
+        logger.info("Generating PDF report for Quicktest {}...".\
                         format(quicktest)))
 
         # Get QuickTest object
         qt_obj = self.find_quicktest_object(quicktest=quicktest)
 
         # Generate the PDF report
-        log.info("Start generating PDF report...")
+        logger.info("Start generating PDF report...")
         try:
             self.ixNet.execute('generateReport', '/reporter/generate')
         except Exception as e:
-            log.error(e)
-            raise GenieTgnError("Unable to start generating PDF report for "
+            logger.error(e)
+            raise AssertionError("Unable to start generating PDF report for "
                                 "Quicktest '{}'".format(quicktest))
         else:
-            log.info("Successfully started generating PDF report for "
+            logger.info("Successfully started generating PDF report for "
                         "Quicktest '{}'".format(quicktest))
 
         # Poll until report has successfully generated
-        log.info("Poll until Quicktest '{}' PDF report is generated...".\
+        logger.info("Poll until Quicktest '{}' PDF report is generated...".\
                     format(quicktest))
         timeout = Timeout(max_time=report_wait, interval=report_interval)
         while timeout.iterate():
@@ -3676,12 +3417,12 @@ class Ixia(TrafficGen):
         qt_pdf_file = qt_pdf_path + "\\\\TestReport.pdf"
         dest_pdf_file = dest_dir + "/" + dest_file
         temp_file = "/tmp/" + dest_file
-        log.info("Quicktest '{q}' PDF report successfully generated at: {d}".\
+        logger.info("Quicktest '{q}' PDF report successfully generated at: {d}".\
                     format(q=quicktest, d=qt_pdf_file))
 
         # Export file if enabled by user
         if export:
-            log.info(banner("Exporting Quicktest '{}' PDF report".format(quicktest)))
+            logger.info("Exporting Quicktest '{}' PDF report".format(quicktest)))
 
             # Exporting the QuickTest PDF file to /tmp on running server
             try:
@@ -3689,18 +3430,18 @@ class Ixia(TrafficGen):
                                     self.ixNet.readFrom(qt_pdf_file, '-ixNetRelative'),
                                     self.ixNet.writeTo(temp_file, '-overwrite'))
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to export Quicktest '{q}' PDF report".\
+                logger.error(e)
+                raise AssertionError("Unable to export Quicktest '{q}' PDF report".\
                                     format(q=quicktest))
 
             # Now copy from /tmp to runtime.directory
             try:
                 copyfile(temp_file, dest_pdf_file)
             except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to export Quicktest '{q}' PDF "
+                logger.error(e)
+                raise AssertionError("Unable to export Quicktest '{q}' PDF "
                                     "report to '{d}'".format(q=quicktest,
                                                                 d=dest_pdf_file))
             else:
-                log.info("Successfully exported Quicktest '{q}' PDF report to "
+                logger.info("Successfully exported Quicktest '{q}' PDF report to "
                             "'{d}'".format(q=quicktest, d=dest_pdf_file))

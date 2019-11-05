@@ -1,2 +1,4 @@
 f5-sdk
 robot-framework
+prettytable
+IxNetwork
