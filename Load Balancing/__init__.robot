@@ -18,14 +18,14 @@ Configure F5
     tmsh create ltm node ${node_2} address ${node_2}
     tmsh create ltm pool ${pool} { members add { ${node_1}:80 ${node_2}:80 } monitor none }
     tmsh create ltm virtual ${virtual_server} destination ${virtual_server}:80 mask 255.255.255.255 ip-protocol tcp pool ${pool}
-    tmsh create ltm virtual ${virtual_server}-https destination ${virtual_server}:443 mask 255.255.255.255 ip-protocol tcp pool ${pool}
+    tmsh create ltm virtual https-${virtual_server} destination ${virtual_server}:443 mask 255.255.255.255 ip-protocol tcp pool ${pool}
     tmsh modify ltm virtual-address ${virtual_server} route-advertisement selective
     # Configure V6 Nodes and Pools
     tmsh create ltm node ${v6_node_1} address ${v6_node_1}
     tmsh create ltm node ${v6_node_2} address ${v6_node_2}
-    tmsh create ltm pool ${v6_pool} { members add { ${v6_node_1}:80 ${v6_node_2}:80 } monitor none }
-    tmsh create ltm virtual ${v6_virtual_server} destination ${v6_virtual_server}:80 mask 255.255.255.255 ip-protocol tcp pool ${v6_pool}
-    tmsh create ltm virtual ${v6_virtual_server}-https destination ${v6_virtual_server}:443 mask 255.255.255.255 ip-protocol tcp pool ${v6_pool}
+    tmsh create ltm pool ${v6_pool} { members add { ${v6_node_1}.80 ${v6_node_2}.80 } monitor none }
+    tmsh create ltm virtual ${v6_virtual_server} destination ${v6_virtual_server}.80 mask 255.255.255.255 ip-protocol tcp pool ${v6_pool}
+    tmsh create ltm virtual https-${v6_virtual_server} destination ${v6_virtual_server}.443 mask 255.255.255.255 ip-protocol tcp pool ${v6_pool}
     tmsh modify ltm virtual-address ${v6_virtual_server} route-advertisement selective
 
 Teardown
