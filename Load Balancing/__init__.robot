@@ -33,11 +33,13 @@ Teardown
     [tags]  Teardown
     # Delete v4 config
     tmsh delete ltm virtual ${virtual_server}
+    tmsh delete ltm virtual https-${virtual_server}
     tmsh delete ltm pool ${pool}
     tmsh delete ltm node ${node_1}
     tmsh delete ltm node ${node_2}
     # Delete v6 config
     tmsh delete ltm virtual ${v6_virtual_server}
+    tmsh delete ltm virtual https-${v6_virtual_server}
     tmsh delete ltm pool ${v6_pool}
     tmsh delete ltm node ${v6_node_1}
     tmsh delete ltm node ${v6_node_2}

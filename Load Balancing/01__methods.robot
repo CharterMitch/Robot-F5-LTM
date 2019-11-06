@@ -27,7 +27,7 @@ Round Robin
     Should be true          ${total_requests_1}>0
     Should be true          ${total_requests_2}>0
     Log                     Round Robin connection difference is ${diff}
-    Log v4 Statistics
+    Log F5 Statistics
 
 Member Ratio
     [Documentation]     Connections are sent to a member with a high ratio 
@@ -53,7 +53,7 @@ Member Ratio
     Should be true          ${total_requests_1}>0
     Should be true          ${total_requests_2}>0
     Log     Member ratio connection difference is ${diff}
-    Log v4 Statistics
+    Log F5 Statistics
 
 Fastest App Response
     # Can we setup two HTTP server traffic types and add 100ms of delay to the second?

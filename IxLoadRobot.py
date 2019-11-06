@@ -79,15 +79,13 @@ class IxLoadRobot:
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
         ''' Load and RXF file on the remote IXLoad Server '''
-        # Cleanup string replacing 's and whitespace
-        file_path = rxf_file_path.replace("'", "").strip()
         logger.warn("Loading RXF file {}".format(file_path))
+        # Cleanup file path replacing 's and whitespace
+        file_path = rxf_file_path.replace("'", "").strip()
         data = {"fullPath": file_path}
-        url = 'ixload/test/operations/loadTest'
-        reply = self.post(url, data=data, headers=self.JSON_HEADER)
-        self.wait(reply)
+        operation = 'loadTest'
+        self._test_operation(operation, data=data)
         self.apply_config()
-        return reply
 
     def apply_config(self):
         self._test_operation('applyConfiguration')
@@ -122,6 +120,7 @@ class IxLoadRobot:
         _url = urljoin(self.url, operation)
         reply = self.s.post(_url, data=data, headers=self.JSON_HEADER)
         self.wait(reply)
+        return reply
 
     def load_local_rxf(self, rxf_file_path):
         # TODO: Upload a local file then load it?
