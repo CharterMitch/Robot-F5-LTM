@@ -19,12 +19,18 @@ user:
   username: admin
   password: admin
 
-# ixia configuration
-ixia:
+# ixnetwork configuration
+ixnetwork:
   name:               'ixia'
-  api_server_ip:      35.135.192.14
-  tcl_port:           22
+  api_server_ip:      '172.22.73.14'
+  tcl_port:           8010
   chassis_ip:         10.244.24.23
-  port_list:          ['11/1','11/2']
+  port_list:          [('10.244.244.23', 11, 1), ('10.244.24.23', 11, 2)]
   ixnetwork_version:  8.5
   license_server_ip:  10.244.24.23
+
+# ixload configuration
+ixload:
+  site_url:           'http://172.22.73.14:8080/api/v0/'
+  port_list:          [('10.244.244.23', 11, 1), ('10.244.24.23', 11, 2)]
+  ixload_version:     8.50.0.465

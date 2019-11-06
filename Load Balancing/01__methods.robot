@@ -3,6 +3,9 @@
 Resource    ../common.resource
 Library     ../F5Rest.py  ${f5_primary}     ${user}
 Variables   settings.yaml
+Resource        suite.resource
+Suite Setup     Start Ixia Test     v4_http.rxf
+Suite Teardown  Stop Ixia Test
 
 *** Test Cases ***
 Round Robin
@@ -13,7 +16,7 @@ Round Robin
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    round-robin
     tmsh reset-stats ltm pool
-    Sleep                   60
+    Sleep                   120
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${total_requests_2}     Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}
@@ -35,7 +38,7 @@ Member Ratio
     # Set the ratio of the first member to 10
     tmsh modify ltm pool http_test_pool {members modify {${node_1}:http { ratio 10 }}}
     tmsh reset-stats ltm pool
-    Sleep                   60
+    Sleep                   120
     # Gather traffic statistics
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
