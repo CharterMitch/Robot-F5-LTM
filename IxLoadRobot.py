@@ -79,9 +79,9 @@ class IxLoadRobot:
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
         ''' Load and RXF file on the remote IXLoad Server '''
-        logger.warn("Loading RXF file {}".format(file_path))
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
+        logger.warn("Loading RXF file {}".format(file_path))
         data = {"fullPath": file_path}
         operation = 'loadTest'
         self._test_operation(operation, data=data)
