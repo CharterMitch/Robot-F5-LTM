@@ -65,10 +65,17 @@ class F5Rest():
         cmd = str("-c 'tmsh {}'".format(command))
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
-            # Return any output
+            # Return any errors in tmsh create/modify commands
+            if 'create' in cmd or 'modfy' in cmd and command.commandResult:
+                raise AssertionError('Error in tmsh command: {}\n{}'.format(
+                                     cmd, command.commandResult))
+            #logger.warn(command.raw)
+            # Return output from command
             return command.commandResult
         except LazyAttributesRequired:
-            return True
+            # Do nothing if there is no output
+            #logger.warn(command.raw)
+            pass
 
     @keyword('imish -c ${commands}')
     def imish(self, commands, route_domain=0):

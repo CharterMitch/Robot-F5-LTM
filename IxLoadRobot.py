@@ -82,7 +82,7 @@ class IxLoadRobot:
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
         logger.warn("Loading RXF file {}".format(file_path))
-        data = {"fullPath": file_path}
+        data = json.dumps({"fullPath": file_path})
         operation = 'loadTest'
         self._test_operation(operation, data=data)
         self.apply_config()
@@ -105,7 +105,7 @@ class IxLoadRobot:
 
     @keyword("Stop IXLoad Test")
     def stop_test(self):
-        ''' Start the currently loaded test. '''
+        ''' Stop the currently loaded test. '''
         logger.warn("Stopping IXIA Test ...")
         self._test_operation('gracefulStopRun')
 

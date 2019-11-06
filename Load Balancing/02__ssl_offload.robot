@@ -9,14 +9,10 @@ Suite Teardown  Stop Ixia Test
 *** Test Cases ***
 V4 SSL Offload
     Reset Statistics
-    Log F5 Statistics
-    ${result}=     tmsh show ltm profile client-ssl clientssl | grep -i Protocol
-    # TLS 1.2 should be at 0 connections
-    Should Match Regexp     ${result}   Version 1.2.+0\n
+    Log F5 Statistics       ${pool}     ${virtual_server}
     # Wait a while for ixia test traffic
-    Sleep   120
+    Sleep   60
     ${result}=     tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # Should be thousands of connections "K"
     Should Match Regexp     ${result}   Version 1.2.+K\n
-    &{stats}=   Get pool ${pool} stats
-    Log F5 Statistics
+    Log F5 Statistics       ${pool}     ${virtual_server}

@@ -12,5 +12,5 @@ Start Ixia Test
     start ixload test
 
 Stop Ixia Test
-    [Documentation]     Gravefully stop a running IXIA test.
+    [Documentation]     Gracefully stop a running IXIA test.
     stop ixload test
