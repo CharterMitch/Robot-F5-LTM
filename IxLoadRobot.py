@@ -1,4 +1,7 @@
-import os, json, re, time
+import os
+import json
+import re
+import time
 from urllib.parse import urljoin, urlencode
 from urllib3 import HTTPConnectionPool
 
@@ -15,7 +18,7 @@ class IxLoadRobot:
     def __init__(self, site_url, ixload_version):
         ''' Args:
             - site_url - URL to IXLoad API
-            - api_version - Actual version of the REST API
+            - ixload_version - Actual version of the REST API
         '''
         self.site_url = site_url
         self.ixload_version = ixload_version
@@ -44,18 +47,19 @@ class IxLoadRobot:
         '''
         data = {"ixLoadVersion": self.ixload_version}
         data = json.dumps(data)
-        _url = urljoin(self.site_url,'sessions')
+        _url = urljoin(self.site_url, 'sessions')
         reply = self.s.post(_url, data=data, headers=self.JSON_HEADER)
         #  reply.headers['Location'] = '/api/v0/sessions/45'
         try:
             self.session_id = reply.headers['Location'] + '/'
         except KeyError:
-            raise AssertionError("Unable to create session. {}".format(reply.text))
+            raise AssertionError("Unable to create session. {}"
+                                 .format(reply.text))
         return reply
 
     def start_session(self):
         ''' Send an HTTP Post to the IXIA API to Start the Session'''
-        logger.warn("Sending 'start' to IXIA API Session. Takes about 15 seconds.")
+        logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
         _url = urljoin(self.url, 'operations/start')
         reply = self.s.post(_url, headers=self.JSON_HEADER)
         if not reply.status_code == 202:
@@ -76,11 +80,11 @@ class IxLoadRobot:
     def load_rxf(self, rxf_file_path):
         ''' Load and RXF file on the remote IXLoad Server '''
         # Cleanup string replacing 's and whitespace
-        file_path = rxf_file_path.replace("'","").strip()
+        file_path = rxf_file_path.replace("'", "").strip()
         logger.warn("Loading RXF file {}".format(file_path))
         data = {"fullPath": file_path}
         url = 'ixload/test/operations/loadTest'
-        reply = self.http_request('POST', url, data=data)
+        reply = self.post(url, data=data, headers=self.JSON_HEADER)
         self.wait(reply)
         self.apply_config()
         return reply
@@ -131,7 +135,8 @@ class IxLoadRobot:
             is finished or errors.
         '''
         if reply.headers.get('location') is None:
-            raise AssertionError('Location headers not sent after action. {}'.format(reply.text))
+            raise AssertionError('Location headers not sent after action. {}'
+                                 .format(reply.text))
         else:
             action_finished = False
             _url = reply.headers.get('location')
@@ -143,42 +148,17 @@ class IxLoadRobot:
                     if data['status'] == 'Successful':
                         action_finished = True
                     else:
-                        errorMsg = "Error while executing action {}.\n".format(_url)
+                        errorMsg = "Error while executing action {}.\n"\
+                                    .format(_url)
                         if data['status'] == 'Error':
                             errorMsg += data['error']
                         raise AssertionError(errorMsg)
                 else:
                     time.sleep(0.3)
 
-    @isactive
-    def http_request(self, method, _url="", data="", params={}, headers=JSON_HEADER):
-        ''' Args:
-
-            - Method (mandatory)
-            - url (optional) is the url that will be appended to the
-            application url.
-            - data (optional) is the data that needs to be sent along with the
-              HTTP method as the JSON payload
-            - params (optional) the payload python dict not necessary if data
-              is used.
-            - headers (optional) these are the HTTP headers that will be
-              sent along with the request. If left blank will use default.
-
-            Method for making a HTTP request.
-            The method type (GET, POST, PATCH, DELETE) is sent as parameter.
-            Along with the url and request data. The HTTP response is returned
-        '''
-        _url = urljoin(self.url, _url)
-        result = self.s.request(
-            method,
-            _url,
-            data=json.dumps(data),
-            params=params,
-            headers=headers,
-            verify=False
-        )
-        return result
-
     def enableForceOwnership(self):
-        r = self.s.patch(self.url, data={'enableForceOwnership': True})
-        return r
+        return self.s.patch(
+            self.url,
+            data={'enableForceOwnership': True},
+            header=self.JSON_HEADER
+            )
