@@ -97,12 +97,14 @@ class IxLoadRobot:
     @keyword("Start IXLoad Test")
     def start_test(self):
         ''' Start the currently loaded test. '''
+        logger.warn("Starting IXIA Test ...")
         self.apply_config()
         self._test_operation('runTest')
 
     @keyword("Stop IXLoad Test")
     def stop_test(self):
         ''' Start the currently loaded test. '''
+        logger.warn("Stopping IXIA Test ...")
         self._test_operation('gracefulStopRun')
 
     def _test_operation(self, operation, data={}):
