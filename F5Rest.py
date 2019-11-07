@@ -83,6 +83,18 @@ class F5Rest():
             # logger.warn(command.raw)
             pass
 
+    @keyword('bash ${command:.+}')
+    def bash(self, command):
+        ''' Run a bash command on an F5 BIG-IP device.
+            Return any output from the command.
+        '''
+        cmd = str("-c '{}'".format(command))
+        command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+        try:
+            return command.commandResult
+        except LazyAttributesRequired:
+            pass
+
     @keyword('imish -c ${commands}')
     def imish(self, commands, route_domain=0):
         ''' Run a zebos / "imish" command on an F5 BIG-IP device.
