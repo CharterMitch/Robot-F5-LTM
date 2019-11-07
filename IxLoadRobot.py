@@ -26,13 +26,13 @@ class IxLoadRobot:
         '''
         self.site_url = site_url
         self.ixload_version = ixload_version
+        self.session_started = False
         self.s = requests.Session()
         self.s.mount('http://', requests.adapters.HTTPAdapter(
             pool_connections=1,
             max_retries=3
         ))
         self.create_session()
-        self.start_session()
 
     def __del__(self):
         ''' Cleanup connections and sessions once python exits.
@@ -77,16 +77,19 @@ class IxLoadRobot:
             itself and takes a while to load.
         '''
         # TODO: Add check to see if session is already active.
-        logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
-        _url = urljoin(self.url, 'operations/start')
-        reply = self.s.post(_url, headers=self.JSON_HEADER)
-        if not reply.status_code == 202:
-            AssertionError("Unable to start session.")
-        self.wait(reply)
+        if not self.session_started:
+            logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
+            _url = urljoin(self.url, 'operations/start')
+            reply = self.s.post(_url, headers=self.JSON_HEADER)
+            if not reply.status_code == 202:
+                AssertionError("Unable to start session.")
+            self.wait(reply)
+            self.session_started = True
 
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
         ''' Load and RXF file on the remote IXLoad Server '''
+        self.start_session()
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
         logger.info("Loading RXF file {}".format(file_path))

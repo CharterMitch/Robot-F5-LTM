@@ -55,11 +55,11 @@ Teardown
 
 *** Test Cases ***
 ID716716
-    [Documentation]     Bug ID 716716: Under certain circumstances
-    ...                 having a kernel route but no TMM route can lead to a TMM core
+    [Documentation]     Bug ID 716716: Under certain circumstances having a kernel
+    ...                 route but no TMM route can lead to a TMM core.
     [Setup]             Setup Bug
-    Sleep               60
+    Sleep               35
     # Make sure there are no core dump files
     ${var}              bash ls -l /var/core/
-    Should Match        ${var}   total 0
+    Should Match        ${var}   total 0\\n
     [Teardown]          Teardown
