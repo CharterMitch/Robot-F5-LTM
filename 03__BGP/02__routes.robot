@@ -20,7 +20,8 @@ V4 Static Route
     [Documentation]     Verify V4 static route is advertised.
     [Setup]             imish -c 'enable','conf t','ip route ${v4_static} null'
     # Wait                          Wait for    Retry every     Commmand
-    Wait until keyword succeeds     30 sec      2 sec           v4 route exists  ${v4_static} 
+    Wait until keyword succeeds     30 sec      2 sec           v4 route exists  ${v4_static}
+    Sleep               3 
     ${result}           imish -c 'show ip route ${v4_static}'
     Should contain      ${result}   Known via "static"
     ${result}           imish -c 'show ip bgp ${v4_static}'
@@ -34,6 +35,7 @@ V6 Static Route
     [Setup]             imish -c 'enable','conf t','ipv6 route ${v6_static} null'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           v6 route exists  ${v6_static} 
+    Sleep               3 
     ${result}           imish -c 'show ipv6 route ${v6_static}'
     Should contain      ${result}   Known via "static"
     ${result}           imish -c 'show bgp ${v6_static}'

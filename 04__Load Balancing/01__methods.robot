@@ -21,6 +21,7 @@ Round Robin
     # Either this or a tmsh command, lots of regex and conversion from string to int
     # You can find the "Get stats for pool" keyword in F5Rest.py
     &{stats}=               Get stats for pool ${pool}
+    # Can use "Get from dictionary" keyword to make this less cryptic?
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${total_requests_2}     Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}
     ${diff}=                Percentage difference ${total_requests_1} ${total_requests_2}
