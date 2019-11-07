@@ -7,7 +7,7 @@ Library     IxLoadRobot.py   ${ixload}[site_url]   ${ixload}[ixload_version]
 Start Ixia Test
     [Documentation]     Start an IXIA test given an .rxf file name.
     [Arguments]         ${rxf_file}  
-    #Load rxf '${ixia_test_dir}\\${rxf_file}'
+    #Load rxf '${ixia_test_dir}${rxf_file}'
     Load rxf 'C:\\Users\\mmahan\\Documents\\${rxf_file}'
     start ixload test
 

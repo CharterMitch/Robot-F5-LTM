@@ -7,6 +7,9 @@ send_base_config: False
 # Send imish/bgp configuration commands for ZebOS
 send_imish_config: False
 
+# Configure the Polatis cross-connects
+configure_polatis: False
+
 # Primary F5
 f5_primary:
   host: 10.240.72.161
@@ -14,10 +17,17 @@ f5_primary:
 f5_secondary:
   host: 10.240.72.162
 
-# Web credentials
+# F5 Web credentials
 user:
   username: admin
   password: admin
+
+# ixload configuration
+ixload:
+  site_url:           'http://172.22.73.14:8080/api/v0/'
+  #port_list:          [('10.244.244.23', 11, 1), ('10.244.24.23', 11, 2)]
+  ixload_version:     8.50.0.465
+  test_directory:     'C:\\Users\\mmahan\\Documents' # Leave out trailing \\
 
 # ixnetwork configuration
 ixnetwork:
@@ -28,9 +38,3 @@ ixnetwork:
   port_list:          [('10.244.244.23', 11, 1), ('10.244.24.23', 11, 2)]
   ixnetwork_version:  8.5
   license_server_ip:  10.244.24.23
-
-# ixload configuration
-ixload:
-  site_url:           'http://172.22.73.14:8080/api/v0/'
-  port_list:          [('10.244.244.23', 11, 1), ('10.244.24.23', 11, 2)]
-  ixload_version:     8.50.0.465
