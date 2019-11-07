@@ -19,14 +19,19 @@ Disable Interface
     [Documentation]     Disable an interface and validate it goes offline.
     [Setup]             tmsh modify net interface 2.1 disabled
     Sleep               2
-    ${var}=     tmsh show net interface 2.1
-    Log         ${var}
-    Should Match Regexp     ${var}   2.1 .+disabled
+    ${var}=             tmsh show net interface 2.1
+    Log                 ${var}
+    Should Match Regexp ${var}   2.1 .+disabled
     [Teardown]          tmsh modify net interface 2.1 enabled
 
-Trunk bandwidth decreases
+Trunk bandwidth decreases with interface down
     [Documentation]     With an interface disabled, bandwidth of trunk should decrease.
-
+    [Setup]             tmsh modify net interface 2.1 disabled
+    Sleep               2
+    ${var}=             show net trunk UplinkTrunk
+    # Bandwidth should be 10G with one interface down
+    Should Match Regexp ${var}   up.+10000
+    [Teardown]          tmsh modify net interface 2.1 enabled
 
 Enable Interface
     [Documentation]     Enable an interface and validate it comes online
