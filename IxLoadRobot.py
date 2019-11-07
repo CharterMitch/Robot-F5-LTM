@@ -1,6 +1,4 @@
-import os
 import json
-import re
 import time
 from urllib.parse import urljoin, urlencode
 from urllib3 import HTTPConnectionPool
@@ -43,7 +41,10 @@ class IxLoadRobot:
 
     def create_session(self):
         ''' This method is used to create a new IXLoad session.
-            It will return the url of the newly created session.
+
+            Sessions are built on the API server and used in all
+            further requests. For now this is simply a placeholder
+            on the API server.
         '''
         data = {"ixLoadVersion": self.ixload_version}
         data = json.dumps(data)
@@ -58,7 +59,11 @@ class IxLoadRobot:
         return reply
 
     def start_session(self):
-        ''' Send an HTTP Post to the IXIA API to Start the Session'''
+        ''' Send an HTTP Post to the IXIA API to Start the Session.
+
+            This is similar to opening the IXLoad GUI on the server
+            itself and takes a while to load.
+        '''
         logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
         _url = urljoin(self.url, 'operations/start')
         reply = self.s.post(_url, headers=self.JSON_HEADER)
@@ -90,12 +95,6 @@ class IxLoadRobot:
     def apply_config(self):
         self._test_operation('applyConfiguration')
 
-    def add_community(self):
-        data = {'_object_': 'NetTraffic'}
-        operation = 'ixload/test/operations/add_community'
-        _url = urljoin(self.url, operation)
-        self.s.post(_url, data=data, headers=self.JSON_HEADER)
-
     @keyword("Start IXLoad Test")
     def start_test(self):
         ''' Start the currently loaded test. '''
@@ -113,7 +112,7 @@ class IxLoadRobot:
         ''' Send an HTTP POST to a given test operation URL
             then wait for the operation to complete.
 
-        http://<host>:<port>/api/v0/sessions/<session id>/
+            http://<host>:<port>/api/v0/sessions/<session id>/
             ixload/test/operations/<operation>
         '''
         operation = 'ixload/test/operations/{}'.format(operation)
@@ -130,8 +129,10 @@ class IxLoadRobot:
         ''' This method waits for an action to finish executing.
 
             It uses the reply object from the action to get the
-            actions GET url. It then calls that URL until the operation
-            is finished or errors.
+            actions GET url. We then make a series of calls to the
+            URL until the statr is finished.
+
+            Once the aciton is finished we see if there were any errors.
         '''
         if reply.headers.get('location') is None:
             raise AssertionError('Location headers not sent after action. {}'
@@ -154,10 +155,3 @@ class IxLoadRobot:
                         raise AssertionError(errorMsg)
                 else:
                     time.sleep(0.3)
-
-    def enableForceOwnership(self):
-        return self.s.patch(
-            self.url,
-            data={'enableForceOwnership': True},
-            header=self.JSON_HEADER
-            )
