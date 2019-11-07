@@ -125,6 +125,7 @@ class F5Rest():
             Then load the pool members statistics and return them
             as a dictionary object.
 
+            API Result:
             {'/Common/example-server': {
                 'addr': {'description': '2001:200:0:1300::100'},
                 'connq_ageEdm': {'value': 0},
@@ -163,8 +164,10 @@ class F5Rest():
         my_pool_mbrs = my_pool.members_s.get_collection()
         for pool_mbr in my_pool_mbrs:
             mbr_stats = Stats(pool_mbr.stats.load())
+            # Create a new dictionary with the node name as the key
             dict_ = {mbr_stats.stat.nodeName.description: mbr_stats.stat}
             stats.update(dict_)
+        # Return { node: node_stats_dict } to Robot Keyword
         return stats
 
     @keyword('get ssl profile ${profile} stats')

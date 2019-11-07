@@ -18,6 +18,9 @@ Round Robin
     Log F5 Statistics       ${pool}     ${virtual_server}
     # Wait a while for ixia test traffic
     Sleep                   60
+    # Use the REST API to get pool stats so we can use native python integers
+    # Either this or a tmsh command, lots of regex and conversion from string to int
+    # You can find the "Get stats for pool" keyword in F5Rest.py
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${total_requests_2}     Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}
@@ -42,7 +45,9 @@ Member Ratio
     Log F5 Statistics       ${pool}     ${virtual_server}
     # Wait a while for ixia test traffic
     Sleep                   60
-    # Gather traffic statistics
+    # Use the REST API to get pool stats so we can use native python integers
+    # Either this or a tmsh command, lots of regex and conversion from string to int
+    # You can find the "Get stats for pool" keyword in F5Rest.py
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${total_requests_2}     Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}
