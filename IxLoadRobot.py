@@ -75,6 +75,8 @@ class IxLoadRobot:
 
             This is similar to opening the IXLoad GUI on the server
             itself and takes a while to load.
+
+            This must be done before issuing operations commands!
         '''
         # TODO: Add check to see if session is already active.
         if not self.session_started:
