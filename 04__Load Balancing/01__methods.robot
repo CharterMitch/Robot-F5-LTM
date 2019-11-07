@@ -9,8 +9,8 @@ Suite Teardown  Stop Ixia Test
 
 *** Test Cases ***
 Round Robin
-    [Documentation]     Connections are distributed evenly across all 
-    ...                 members in the pool.
+    [Documentation]         Connections are distributed evenly across all 
+    ...                     members in the pool.
     tmsh modify ltm pool ${pool} load-balancing-mode round-robin
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    round-robin
@@ -30,9 +30,9 @@ Round Robin
     Log F5 Statistics       ${pool}     ${virtual_server}
 
 Member Ratio
-    [Documentation]     Connections are sent to a member with a high ratio 
-    ...                 number more often than a member with a lower ratio 
-    ...                 number.
+    [Documentation]         Connections are sent to a member with a high ratio 
+    ...                     number more often than a member with a lower ratio 
+    ...                     number.
     tmsh modify ltm pool ${pool} load-balancing-mode ratio-member
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    ratio-member
@@ -57,5 +57,6 @@ Member Ratio
     Log F5 Statistics       ${pool}     ${virtual_server}
 
 Fastest App Response
+    [Documentation]         Not Implemented    
     # Can we setup two HTTP server traffic types and add 100ms of delay to the second?
     No Operation
