@@ -41,15 +41,15 @@ ${gateway}      198.18.96.2
 
 *** Keywords ***
 Setup Bug
-    tmsh create node ${server} address ${server}
+    tmsh create ltm node ${server} address ${server}
     tmsh create ltm pool ${pool} { members add { ${server}:80 } monitor http }
     tmsh create net route internal gw ${gateway} network ${network}
-    imish ip route ${network} ${gateway}
+    imish -c 'ip route ${network} ${gateway}'
     Sleep   30
     tmsh delete net route internal
 
 Teardown
-    imish no ip route ${network} ${gateway}
+    imish -c 'no ip route ${network} ${gateway}'
     tmsh delete ltm pool ${pool}
     tmsh delete ltm node ${server}
 
