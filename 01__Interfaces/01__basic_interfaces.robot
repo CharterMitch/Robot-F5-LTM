@@ -39,6 +39,7 @@ Trunk bandwidth changes with interface status
     Sleep                   10
     ${var}=                 tmsh show net trunk UplinkTrunk
     Should Match Regexp     ${var}   up.+20000
+    Log                     ${var}
     [Teardown]              tmsh modify net interface 2.1 enabled
 
 Enable Interface
