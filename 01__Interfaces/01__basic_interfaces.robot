@@ -26,20 +26,25 @@ Disable Interface
     Should Match Regexp     ${var}   2.1 .+disabled
     [Teardown]              tmsh modify net interface 2.1 enabled
 
-Trunk bandwidth decreases with interface down
-    [Documentation]         With an interface disabled, bandwidth of trunk should decrease.
+Trunk bandwidth changes with interface status
+    [Documentation]         Trunk bandwidth should change with member status.
     [Setup]                 tmsh modify net interface 2.1 disabled
     Sleep                   2
     ${var}=                 tmsh show net trunk UplinkTrunk
     Log                     ${var}
     # Bandwidth should be 10G with one interface down
     Should Match Regexp     ${var}   up.+10000
+    tmsh modify net interface 2.1 enabled
+    # Let interface come online and rejoin trunk
+    Sleep                   10
+    ${var}=                 tmsh show net trunk UplinkTrunk
+    Should Match Regexp     ${var}   up.+20000
     [Teardown]              tmsh modify net interface 2.1 enabled
 
 Enable Interface
     [Documentation]         Enable an interface and validate it comes online
     [Setup]                 tmsh modify net interface 2.1 enabled
-    Sleep                    2
+    Sleep                   2
     ${var}=                 tmsh show net interface 2.1
     Log                     ${var}
     Should Match Regexp     ${var}   2.1 .+up
