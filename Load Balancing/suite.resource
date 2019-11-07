@@ -7,9 +7,13 @@ Reset Statistics
     tmsh reset-stats ltm profile client-ssl clientssl
 
 Log F5 Statistics
-    [Documentation]     Log statistics.
+    [Documentation]     Log virtual server, pool, member and profile statistics.
     [Arguments]         ${pool}     ${virtual_server}
-    ${v1}=  tmsh show ltm pool ${pool}
-    ${v2}=  tmsh show ltm virtual ${virtual_server}
-    ${v3}=  tmsh show ltm profile client-ssl clientssl | grep -i Protocol
-    Log Many    ${v1}   ${v2}   ${v3}
+    ${show_ltm_pool}=           tmsh show ltm pool ${pool}
+    ${show_ltm_pool_members}=   tmsh show ltm pool ${pool} members
+    ${show_ltm_virtual}=        tmsh show ltm virtual ${virtual_server}
+    ${show_ltm_profile}=        tmsh show ltm profile client-ssl clientssl | grep -i Protocol
+    Log     ${show_ltm_pool}
+    Log     ${show_ltm_pool_members}
+    Log     ${show_ltm_virtual}
+    Log     ${show_ltm_profile}

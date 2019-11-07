@@ -18,26 +18,32 @@ class F5Rest():
     def __init__(self, device, user):
         self.hostname = device['host']
         self.user = user
-        self.f5_rest_connect(self.hostname,self.user)
+        self.f5_rest_connect(self.hostname, self.user)
 
     def f5_rest_connect(self, hostname, user):
-        #logger.warn('Connecting to F5 {}'.format(hostname))
+        # logger.warn('Connecting to F5 {}'.format(hostname))
         try:
-            self.mgmt = ManagementRoot(hostname, user['username'], user['password'])
+            self.mgmt = ManagementRoot(
+                hostname,
+                user['username'],
+                user['password']
+                )
         except:
-            AssertionError("Unable to connect to F5 REST API. Check settings.yaml.")
+            AssertionError("Unable to connect to F5 REST API. \
+                            Check settings.yaml.")
 
     @keyword('load tmsh ${file}')
     def load_tmsh(self, file):
         # Base config is located in this same directory
         # Not linux compatible?
         file = str(Path(__file__).parent.absolute()) + "\\" + file
-        with open(file,'r') as fp:
+        with open(file, 'r') as fp:
             for line in fp:
                 if '#' not in line and len(line) > 4:
-                    #logger.warn("Sending command {}".format(line))
+                    # logger.warn("Sending command {}".format(line))
                     cmd = "-c '{}'".format(line.rstrip())
-                    result = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
+                    result = self.mgmt.tm.util.bash.exec_cmd(
+                        'run', utilCmdArgs=cmd)
                     try:
                         if 'Error' in result.commandResult:
                             logger.warn(cmd)
@@ -50,11 +56,11 @@ class F5Rest():
         file = str(Path(__file__).parent.absolute()) + "\\" + file
         with open(file, 'r') as fp:
             for line in fp:
-                if '!' not in line and len(line)>4:
+                if '!' not in line and len(line) > 4:
                     if ',' in line:
                         cmd = ['enable', 'conf t'] + line.rstrip().split(',')
                     else:
-                        cmd = ['enable','conf t'] + [line.rstrip()]
+                        cmd = ['enable', 'conf t'] + [line.rstrip()]
                     self.imish(cmd)
 
     @keyword('tmsh ${command:.+}')
@@ -69,12 +75,12 @@ class F5Rest():
             if 'create' in cmd or 'modfy' in cmd and command.commandResult:
                 raise AssertionError('Error in tmsh command: {}\n{}'.format(
                                      cmd, command.commandResult))
-            #logger.warn(command.raw)
+            # logger.warn(command.raw)
             # Return output from command
             return command.commandResult
         except LazyAttributesRequired:
             # Do nothing if there is no output
-            #logger.warn(command.raw)
+            # logger.warn(command.raw)
             pass
 
     @keyword('imish -c ${commands}')
@@ -82,7 +88,7 @@ class F5Rest():
         ''' Run a zebos / "imish" command on an F5 BIG-IP device.
             Return any output from the command.
         '''
-        command_list = str(commands).strip('[]') # Allows lists as well as strings?
+        command_list = str(commands).strip('[]')  # Allows lists and strings
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
@@ -93,10 +99,10 @@ class F5Rest():
 
     @keyword('imish -r ${route_domain} -c ${commands}')
     def imish_rd(self, commands, route_domain):
-        ''' Run a zebos / "imish" command in a route partition an F5 BIG-IP device.
+        ''' Run a zebos / "imish" command in a route partition.
             Return any output from the command.
         '''
-        command_list = str(commands).strip('[]')  # Allows lists as well as strings?
+        command_list = str(commands).strip('[]')  # Allow lists and strings
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
@@ -143,7 +149,9 @@ class F5Rest():
                 'sessionStatus': {'description': 'enabled'},
                 'status_availabilityState': {'description': 'unknown'},
                 'status_enabledState': {'description': 'enabled'},
-                'status_statusReason': {'description': 'Pool member does not have service checking enabled'},
+                'status_statusReason':
+                {'description': 'Pool member does not have service checking
+                                 enabled'},
                 'totRequests': {'value': 98443}
             }, ...
         '''
@@ -161,10 +169,7 @@ class F5Rest():
 
     @keyword('get ssl profile ${profile} stats')
     def get_ssl_profile_stats(self, profile):
-        # NOT IMPLEMENTED
-         client_ssls = mgmt.tm.ltm.profile.client_ssls.get_collection()
-         client_ssls[0].raw
-         raise AssertionError('Not implemented.')
+        pass
 
     @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')
     def get_percent(self, num1, num2):
@@ -174,4 +179,4 @@ class F5Rest():
         if int(num1) == num2:
             return 0
         if num1 != 0 and num2 != 0:
-            return (abs(num1 - num2) / max(num1,num2)) * 100.0
+            return (abs(num1 - num2) / max(num1, num2)) * 100.0

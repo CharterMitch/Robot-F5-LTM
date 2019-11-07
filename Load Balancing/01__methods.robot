@@ -11,14 +11,13 @@ Suite Teardown  Stop Ixia Test
 Round Robin
     [Documentation]     Connections are distributed evenly across all 
     ...                 members in the pool.
-    # TODO: Start IXIA Test
     tmsh modify ltm pool ${pool} load-balancing-mode round-robin
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    round-robin
     tmsh reset-stats ltm pool
     Log F5 Statistics       ${pool}     ${virtual_server}
     # Wait a while for ixia test traffic
-    Sleep   60
+    Sleep                   60
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${total_requests_2}     Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}
@@ -42,7 +41,7 @@ Member Ratio
     tmsh reset-stats ltm pool
     Log F5 Statistics       ${pool}     ${virtual_server}
     # Wait a while for ixia test traffic
-    Sleep   60
+    Sleep                   60
     # Gather traffic statistics
     &{stats}=               Get stats for pool ${pool}
     ${total_requests_1}     Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
