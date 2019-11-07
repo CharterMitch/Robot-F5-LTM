@@ -76,7 +76,8 @@ class IxLoadRobot:
             This is similar to opening the IXLoad GUI on the server
             itself and takes a while to load.
         '''
-        logger.info("Sending 'start' to IXIA API Session. ~10 seconds...")
+        # TODO: Add check to see if session is already active.
+        logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
         _url = urljoin(self.url, 'operations/start')
         reply = self.s.post(_url, headers=self.JSON_HEADER)
         if not reply.status_code == 202:
