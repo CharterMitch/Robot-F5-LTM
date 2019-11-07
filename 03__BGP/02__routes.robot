@@ -19,7 +19,7 @@ V6 Default Route
 
 V4 Static Route
     [Documentation]     Verify V4 static route is advertised.
-    imish -c 'enable','conf t','ip route ${v4_static} null'
+    [Setup]             imish -c 'enable','conf t','ip route ${v4_static} null'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           v4 route exists  ${v4_static} 
     ${result}           imish -c 'show ip route ${v4_static}'
@@ -28,11 +28,11 @@ V4 Static Route
     # Advertised to peer groups: output should have our IPV4 peer group listed
     Should contain      ${result}   ${v4_peer_group}
     Log                 ${result}
-    imish -c 'enable','conf t','no ip route ${v4_static} null'
+    [Teardown]             imish -c 'enable','conf t','no ip route ${v4_static} null'
 
 V6 Static Route
     [Documentation]     Verify V6 static route is advertised.
-    imish -c 'enable','conf t','ipv6 route ${v6_static} null'
+    [Setup]             imish -c 'enable','conf t','ipv6 route ${v6_static} null'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           v6 route exists  ${v6_static} 
     ${result}           imish -c 'show ipv6 route ${v6_static}'
@@ -41,7 +41,7 @@ V6 Static Route
     # Advertised to peer groups: output should have our IPV4 peer group listed
     Should contain      ${result}   ${v6_peer_group}
     Log                 ${result}
-    imish -c 'enable','conf t','no ipv6 route ${v6_static} null'
+    [Teardown]          imish -c 'enable','conf t','no ipv6 route ${v6_static} null'
 
 
 *** Keywords ***

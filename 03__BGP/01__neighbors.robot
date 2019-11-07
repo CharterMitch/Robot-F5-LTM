@@ -14,7 +14,7 @@ Neighbors Established
 
 Shutdown V4 Neighbor
     [Documentation]     Verify neighbor shutdown command.
-    imish -c 'enable','conf t','router bgp ${asn}','neighbor ${v4_peers}[0] shutdown'
+    [Setup]             imish -c 'enable','conf t','router bgp ${asn}','neighbor ${v4_peers}[0] shutdown'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Shutdown  ${v4_peers}[0]
     ${result}           imish -c 'show bgp neighbors ${v4_peers}[0]'
@@ -24,7 +24,7 @@ Shutdown V4 Neighbor
 
 No Shutdown V4 Neighbor
     [Documentation]     Verify neighbor no shutdown command.
-    imish -c 'enable','conf t','router bgp ${asn}','no neighbor ${v4_peers}[0] shutdown'
+    [Setup]             imish -c 'enable','conf t','router bgp ${asn}','no neighbor ${v4_peers}[0] shutdown'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Established  ${v4_peers}[0] 
     ${result}           imish -c 'show bgp neighbors ${v4_peers}[0]'
@@ -32,7 +32,7 @@ No Shutdown V4 Neighbor
 
 Shutdown V6 Neighbor
     [Documentation]     Verify neighbor shutdown command.
-    imish -c 'enable','conf t','router bgp ${asn}','neighbor ${v6_peers}[0] shutdown'
+    [Setup]             imish -c 'enable','conf t','router bgp ${asn}','neighbor ${v6_peers}[0] shutdown'
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Shutdown  ${v6_peers}[0]
     ${result}           imish -c 'show bgp neighbors ${v6_peers}[0]'
@@ -42,7 +42,7 @@ Shutdown V6 Neighbor
 
 No Shutdown V6 Neighbor
     [Documentation]     Verify neighbor no shutdown command.
-    imish -c 'enable','conf t','router bgp ${asn}','no neighbor ${v6_peers}[0] shutdown' 
+    [Setup]             imish -c 'enable','conf t','router bgp ${asn}','no neighbor ${v6_peers}[0] shutdown' 
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Established  ${v6_peers}[0]
     ${result}           imish -c 'show bgp neighbors ${v6_peers}[0]'
@@ -64,7 +64,7 @@ Neighbor Established
     Should contain      ${result}    Established
 
 Neighbor Shutdown
-    [Documentation]     Verify a BGP neighbor is established.
+    [Documentation]     Verify a BGP neighbor is shutdown (Idle).
     [Arguments]         ${neighbor}
     ${result}           imish -c 'show bgp neighbors ${neighbor}'
     Should contain      ${result}    Idle
