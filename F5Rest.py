@@ -72,7 +72,8 @@ class F5Rest():
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any errors in tmsh create/modify commands
-            if 'create' in cmd or 'modify' in cmd and command.commandResult:
+            if 'create' in cmd or 'modify' in cmd or 'delete' in cmd \
+                    and command.commandResult:
                 if 'already exists' in command.commandResult:
                     logger.warn(command.commandResult)
                 else:
