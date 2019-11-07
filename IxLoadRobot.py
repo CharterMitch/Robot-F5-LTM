@@ -15,7 +15,6 @@ class IxLoadRobot:
 
     def __init__(self, site_url, ixload_version):
         ''' Initialize a connection to the IXLoad API.
-            Then, start a session to execute commands against.
 
             Args:
             - site_url - URL to IXLoad API
@@ -94,7 +93,7 @@ class IxLoadRobot:
         self.start_session()
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
-        logger.info("Loading RXF file {}".format(file_path))
+        logger.warn("Loading RXF file {}".format(file_path))
         data = json.dumps({"fullPath": file_path})
         operation = 'loadTest'
         self._test_operation(operation, data=data)
@@ -106,7 +105,7 @@ class IxLoadRobot:
     @keyword("Start IXLoad Test")
     def start_test(self):
         ''' Start the currently loaded test. '''
-        logger.info("Starting IXIA Test ...")
+        logger.warn("Starting IXIA Test...")
         self.apply_config()
         self._test_operation('runTest')
 
