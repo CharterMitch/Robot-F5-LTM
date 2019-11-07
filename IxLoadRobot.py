@@ -82,6 +82,16 @@ class IxLoadRobot:
             AssertionError("Unable to start session.")
         self.wait(reply)
 
+    def isactive(func):
+        ''' Decorator to make sure session to device is active. '''
+        def decorated(self, *args, **kwargs):
+            # Get if the current session state is active
+            reply = self.s.get(self.url)
+            if not reply.json()['isActive']:
+                self.start()
+            return func(self, *args, **kwargs)
+        return decorated
+
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
         ''' Load and RXF file on the remote IXLoad Server '''
