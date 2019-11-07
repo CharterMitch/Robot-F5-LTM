@@ -25,9 +25,5 @@ To disable a specific test (in any folder) add an _ in front of the file name.
 
 # Generic Robot Guides
 
-"How to Write Good Test Cases":
-
+- How to Write Good Test Cases:
 https://github.com/robotframework/HowToWriteGoodTestCases/blob/master/HowToWriteGoodTestCases.rst
-
-You can see some of my proposed @keyword('') decorators in Arista.py.
-They may be a better method to the more difficult to read CLI inputs, etc.
