@@ -1,15 +1,18 @@
 *** Settings ***
 # https://clouddocs.f5.com/api/icontrol-soap/LocalLB__LBMethod.html
 Resource    ../common.resource
+Library     ../F5Rest.py  ${f5_primary}     ${user}
 
 *** Test Cases ***
-Interface Speed and Duplex
-    [Documentation]
-    No Operation
+Show Net Interface
+    ${var}=     tmsh show net interface
+    Log         ${var}
 
-Interface Trunk
-    [Documentation]
-    No Operation
+Show Net Trunk
+    ${var}=     tmsh show net trunk
+    Log         ${var}
+    # Validate UplinkTrunk is in up state
+    Should Match Regexp     ${var}   UplinkTrunk .+up
 
 Disable Interface
     [Documentation]

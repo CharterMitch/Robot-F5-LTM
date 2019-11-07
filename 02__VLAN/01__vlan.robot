@@ -3,7 +3,6 @@
 Resource    ../common.resource
 
 *** Test Cases ***
-Tagged VLAN passes traffic
-    [Documentation]
-    # Some IXIA test ...
-    No Operation
+Show net vlan
+    ${var}=     tmsh show net vlan all-properties
+    Log         ${var}

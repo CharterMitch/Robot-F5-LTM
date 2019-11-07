@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    VLAN Testing
 Resource        ../common.resource
-
+Library         ../F5Rest.py  ${f5_primary}     ${user}
 #Suite Setup     Setup F5
 #Suite Teardown  Teardown
 
