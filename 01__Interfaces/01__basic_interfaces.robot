@@ -30,7 +30,8 @@ Trunk bandwidth decreases with interface down
     [Documentation]         With an interface disabled, bandwidth of trunk should decrease.
     [Setup]                 tmsh modify net interface 2.1 disabled
     Sleep                   2
-    ${var}=                 show net trunk UplinkTrunk
+    ${var}=                 tmsh show net trunk UplinkTrunk
+    Log                     ${var}
     # Bandwidth should be 10G with one interface down
     Should Match Regexp     ${var}   up.+10000
     [Teardown]              tmsh modify net interface 2.1 enabled
