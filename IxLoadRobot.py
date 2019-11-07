@@ -56,6 +56,7 @@ class IxLoadRobot:
             further requests. For now this is simply a placeholder
             on the API server.
         '''
+        logger.info('Create IXIA Session.')
         data = {"ixLoadVersion": self.ixload_version}
         data = json.dumps(data)
         _url = urljoin(self.site_url, 'sessions')
@@ -81,16 +82,6 @@ class IxLoadRobot:
         if not reply.status_code == 202:
             AssertionError("Unable to start session.")
         self.wait(reply)
-
-    def isactive(func):
-        ''' Decorator to make sure session to device is active. '''
-        def decorated(self, *args, **kwargs):
-            # Get if the current session state is active
-            reply = self.s.get(self.url)
-            if not reply.json()['isActive']:
-                self.start()
-            return func(self, *args, **kwargs)
-        return decorated
 
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
@@ -165,4 +156,4 @@ class IxLoadRobot:
                             errorMsg += data['error']
                         raise AssertionError(errorMsg)
                 else:
-                    time.sleep(0.3)
+                    time.sleep(0.5)
