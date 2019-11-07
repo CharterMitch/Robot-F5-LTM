@@ -91,7 +91,7 @@ class F5Rest():
         cmd = str("-c '{}'".format(command))
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
-            return command.commandResult
+            return command.commandResult.strip()
         except LazyAttributesRequired:
             pass
 

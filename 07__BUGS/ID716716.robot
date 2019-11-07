@@ -41,6 +41,9 @@ ${gateway}      198.18.96.2
 
 *** Keywords ***
 Setup Bug
+    # Delete any existing core files
+    # bash rm -f /var/core/*
+    # Setup F5 for bug
     tmsh create ltm node ${server} address ${server}
     tmsh create ltm pool ${pool} { members add { ${server}:80 } monitor http }
     tmsh create net route internal gw ${gateway} network ${network}
@@ -61,5 +64,6 @@ ID716716
     Sleep               35
     # Make sure there are no core dump files
     ${var}              bash ls -l /var/core/
-    Should Match        ${var}   total 0\\n
+    # Total number of files should be 0
+    Should Match        ${var}   total 0
     [Teardown]          Teardown
