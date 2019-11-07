@@ -14,9 +14,15 @@ class IxLoadRobot:
     JSON_HEADER = {'content-type': 'application/json'}
 
     def __init__(self, site_url, ixload_version):
-        ''' Args:
+        ''' Initialize a connection to the IXLoad API.
+            Then, start a session to execute commands against.
+
+            Args:
             - site_url - URL to IXLoad API
+                Example: http://server:port/api/v0/
+                Keep the trailing / at the end of the site_url
             - ixload_version - Actual version of the REST API
+                The exact version is required to start the IXLoad API
         '''
         self.site_url = site_url
         self.ixload_version = ixload_version
@@ -29,14 +35,18 @@ class IxLoadRobot:
         self.start_session()
 
     def __del__(self):
-        ''' Delete the IXLoad Session to free up resources.
-            Close the requests session.
+        ''' Cleanup connections and sessions once python exits.
+
+            Deletes the IXLoad Session from the IXLoad API server
+            Closes the HTTPConnectionPool
         '''
         self.s.delete(self.url, headers=self.JSON_HEADER)
         self.s.close()
 
     @property
     def url(self):
+        ''' Return the full URL with session ID for HTTP requests '''
+        # http://server:port/api/v0/sessions/45/
         return urljoin(self.site_url, self.session_id)
 
     def create_session(self):
@@ -52,6 +62,7 @@ class IxLoadRobot:
         reply = self.s.post(_url, data=data, headers=self.JSON_HEADER)
         #  reply.headers['Location'] = '/api/v0/sessions/45'
         try:
+            # Add a trailing slash to the session_id so it is "absolute"
             self.session_id = reply.headers['Location'] + '/'
         except KeyError:
             raise AssertionError("Unable to create session. {}"
@@ -64,7 +75,7 @@ class IxLoadRobot:
             This is similar to opening the IXLoad GUI on the server
             itself and takes a while to load.
         '''
-        logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
+        logger.info("Sending 'start' to IXIA API Session. ~10 seconds...")
         _url = urljoin(self.url, 'operations/start')
         reply = self.s.post(_url, headers=self.JSON_HEADER)
         if not reply.status_code == 202:
@@ -76,7 +87,7 @@ class IxLoadRobot:
         ''' Load and RXF file on the remote IXLoad Server '''
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
-        logger.warn("Loading RXF file {}".format(file_path))
+        logger.info("Loading RXF file {}".format(file_path))
         data = json.dumps({"fullPath": file_path})
         operation = 'loadTest'
         self._test_operation(operation, data=data)
@@ -88,14 +99,14 @@ class IxLoadRobot:
     @keyword("Start IXLoad Test")
     def start_test(self):
         ''' Start the currently loaded test. '''
-        logger.warn("Starting IXIA Test ...")
+        logger.info("Starting IXIA Test ...")
         self.apply_config()
         self._test_operation('runTest')
 
     @keyword("Stop IXLoad Test")
     def stop_test(self):
         ''' Stop the currently loaded test. '''
-        logger.warn("Stopping IXIA Test ...")
+        logger.info("Stopping IXIA Test ...")
         self._test_operation('gracefulStopRun')
 
     def _test_operation(self, operation, data={}):
