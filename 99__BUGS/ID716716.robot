@@ -1,8 +1,7 @@
 *** Settings ***
 Resource    ../common.resource
 Library     ../F5Rest.py  ${f5_primary}     ${user}
-#
-# https://cdn.f5.com/product/bugtracker/ID716716.html
+Library     Dialogs
 #
 # Steps to Reproduce:
 #   - Create a setup similar to the following:
@@ -45,7 +44,8 @@ Setup Bug
     # bash rm -f /var/core/*
     # Setup F5 for bug
     tmsh create ltm node ${server} address ${server}
-    tmsh create ltm pool ${pool} { members add { ${server}:0 } }
+    # Update below to add ipip profile
+    tmsh create ltm pool ${pool} { members add { ${server}:80 } monitor http profiles add {ipip}}
     tmsh create net route internal gw ${gateway} network ${network}
     imish -c 'enable','conf t','ip route ${network} ${gateway}'
     Sleep   30
@@ -58,9 +58,9 @@ Teardown
 
 *** Test Cases ***
 ID716716
-    [Documentation]     *** NOT CURRENTLY WORKING / Unable to reproduce bug in 13.1.0.6 ***
-    ...                 Bug ID 716716: Under certain circumstances having a kernel
+    [Documentation]     Bug ID 716716: Under certain circumstances having a kernel
     ...                 route but no TMM route can lead to a TMM core.
+    ...                 https://cdn.f5.com/product/bugtracker/ID716716.html
     [Setup]             Setup Bug
     Sleep               120
     # Make sure there are no core dump files
