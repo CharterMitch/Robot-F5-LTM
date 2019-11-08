@@ -8,8 +8,8 @@ Build Ixia Chart
     [Documentation]     Gather IXIA test stats for the currently running test
     ...                 then return an HTML graph.
     ${stats}=           Gather IXLoad Stats
-    @{list}=            Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
-    ${chart}=           IXLoad Chart ${stats} ${list}
+    @{graph}=           Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    ${chart}=           IXLoad Chart ${stats} ${graph}
     [Return]            ${chart}
 
 Reset Statistics
@@ -34,7 +34,7 @@ Round Robin
     tmsh reset-stats ltm pool
     tmsh modify ltm pool ${pool} load-balancing-mode round-robin
     ${chart}=               Build Ixia Chart
-    Log                     ${chart}    HTML=true
+    Log                     ${chart}    HTML
     # You can find the "Get stats for pool" keyword in F5Rest.py
     &{stats}=               Get stats for pool ${pool}
     # Can use "Get from dictionary" keyword to make this less cryptic?
@@ -58,7 +58,7 @@ Member Ratio
     tmsh modify ltm pool http_test_pool {members modify {${node_1}:http { ratio 10 }}}
     tmsh reset-stats ltm pool
     ${chart}=               Build Ixia Chart
-    Log                     ${chart}    HTML=true
+    Log                     ${chart}    HTML
     &{stats}=               Get stats for pool ${pool}
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     ${pool_member_2}        Set variable    ${stats['/Common/${node_2}']['serverside_totConns']['value']}

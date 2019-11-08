@@ -8,8 +8,7 @@ Neighbors Established
     [Documentation]     Verify BGP neighbors are all established.
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     1 min       5 sec           Neighbors Established
-    ${result}           imish -c 'show bgp neighbors'
-    Log                 ${result}   
+    imish -c 'show bgp neighbors' 
 
 Shutdown V4 Neighbor
     [Documentation]     Verify neighbor shutdown command.
@@ -19,7 +18,6 @@ Shutdown V4 Neighbor
     ${result}           imish -c 'show bgp neighbors ${v4_peers}[0]'
     Should contain      ${result}    Administratively shut down
     Should not contain  ${result}    Established
-    Log                 ${result}
 
 No Shutdown V4 Neighbor
     [Documentation]     Verify neighbor no shutdown command.
@@ -27,7 +25,6 @@ No Shutdown V4 Neighbor
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Established  ${v4_peers}[0] 
     ${result}           imish -c 'show bgp neighbors ${v4_peers}[0]'
-    Log                 ${result} 
 
 Shutdown V6 Neighbor
     [Documentation]     Verify neighbor shutdown command.
@@ -37,7 +34,6 @@ Shutdown V6 Neighbor
     ${result}           imish -c 'show bgp neighbors ${v6_peers}[0]'
     Should contain      ${result}    Administratively shut down
     Should not contain  ${result}    Established
-    Log                 ${result}
 
 No Shutdown V6 Neighbor
     [Documentation]     Verify neighbor no shutdown command.
@@ -45,7 +41,6 @@ No Shutdown V6 Neighbor
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      2 sec           Neighbor Established  ${v6_peers}[0]
     ${result}           imish -c 'show bgp neighbors ${v6_peers}[0]'
-    Log                 ${result}
 
 *** Keywords ***
 Neighbors Established
