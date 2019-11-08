@@ -82,6 +82,7 @@ class F5Rest():
                                          .format(cmd, command.commandResult))
             # logger.warn(command.raw)
             # Return output from command
+            logger.info(command.commandResult)
             return command.commandResult
         except LazyAttributesRequired:
             # Do nothing if there is no output
