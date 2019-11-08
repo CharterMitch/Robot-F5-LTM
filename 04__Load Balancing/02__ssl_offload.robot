@@ -2,7 +2,6 @@
 Resource    ../common.resource
 Library     ../F5Rest.py    ${f5_primary}   ${user}
 Variables   settings.yaml
-Resource    suite.resource
 
 *** Keywords ***
 Build Ixia Chart

@@ -158,8 +158,11 @@ class IxLoadRobot:
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         for name in stats_wanted:
+            try:
                 y = np.array([value[name] for value in list(stats.values())])
                 ax.plot(x, y.T, lw=1, alpha=0.8, label=name)
+            except KeyError:
+                pass
         ax.set_xlabel('Time (s)')
         ax.legend()
         return mpld3.fig_to_html(fig)
