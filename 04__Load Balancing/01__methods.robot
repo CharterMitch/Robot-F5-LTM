@@ -15,8 +15,11 @@ Round Robin
     Should be equal         ${pool_info.loadBalancingMode}    round-robin
     tmsh reset-stats ltm pool
     Log F5 Statistics       ${pool}     ${virtual_server}
+    ${stats}=               Gather IXLoad Stats
+    @{list}=                Create List | HTTP Concurrent Connections | HTTP Simulated Users
+    ${chart}=               IXLoad Chart ${stats} @list
+    Log                     ${chart}
     # Wait a while for ixia test traffic
-    Sleep                   60
     # Use the REST API to get pool stats so we can use native python integers
     # Either this or a tmsh command, lots of regex and conversion from string to int
     # You can find the "Get stats for pool" keyword in F5Rest.py

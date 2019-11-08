@@ -69,6 +69,7 @@ class F5Rest():
             Return any output from the command.
         '''
         cmd = str("-c 'tmsh {}'".format(command))
+        logger.info(cmd)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any errors in tmsh create/modify commands
@@ -93,6 +94,7 @@ class F5Rest():
             Return any output from the command.
         '''
         cmd = str("-c '{}'".format(command))
+        logger.info(cmd)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             return command.commandResult.strip()
@@ -106,6 +108,7 @@ class F5Rest():
         '''
         command_list = str(commands).strip('[]')  # Allows lists and strings
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
+        logger.info(cmd)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any output
@@ -120,6 +123,7 @@ class F5Rest():
         '''
         command_list = str(commands).strip('[]')  # Allow lists and strings
         cmd = '-c "zebos -r {} cmd {}"'.format(route_domain, command_list)
+        logger.info(cmd)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any output

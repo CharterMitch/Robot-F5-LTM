@@ -58,7 +58,7 @@ Setup Bug
     Start Ixia Test     id716716.rxf
     # Wait                          Wait for    Retry every     Commmand
     Wait until keyword succeeds     30 sec      1 sec           Pool is available
-    Log     Deleting kernel route, this should core TMM on next health check.     WARN
+    Log     Deleting kernel route. This will core TMM on next health check if bug is present.     WARN
     tmsh delete net route internal
 
 Teardown

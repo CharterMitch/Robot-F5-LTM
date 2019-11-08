@@ -108,6 +108,58 @@ class IxLoadRobot:
         self.apply_config()
         self._test_operation('runTest')
 
+    @keyword("Gather IXLoad Stats")
+    def gather_stats(self):
+        logger.warn('Gathering stats while IXIA test runs.\
+                This will wait for the full test to complete.')
+        _dict = {}
+        test_url = urljoin(self.url, 'ixload/test/activeTest')
+        stats_url = urljoin(self.url, 'ixload/stats/HTTPClient/values')
+        r = self.s.connect.s.get(test_url)
+        if r.json()['currentState'] != 'Running':
+            logger.warn('Please start an IXIA test before gathering stats.')
+        while r.json()['currentState'] == 'Running':
+            # Add stats to the dictionary placeholder
+            _dict.update(self.s.connect.s.get(stats_url).json())
+            time.sleep(4)
+            r = self.s.connect.s.get(test_url)
+        return _dict
+
+    @keyword("IXLoad Chart ${stats} ${stats_wanted}")
+    def create_html_chart(self, stats, stats_wanted):
+        ''' Create an HTML chart from IXLoad stats gathered from the gather_stats
+            command.
+
+            A list of available stats for your test can be found in the API:
+            Example:
+            http://172.22.73.14:8080/api/v0/sessions/191/ixload/stats/HTTPClient/availableStats
+
+            Example robot entry:
+            ${stats}=   Gather IXLoad Stats
+            @{list}=    Create List | HTTP Concurrent Connections | HTTP Simulated Users
+            ${chart}=   IXLoad Chart ${stats} @list
+            Log         ${chart}
+        '''
+        import mpld3
+        from mpld3 import plugins
+        from mpld3.utils import get_id
+        import numpy as np
+        import matplotlib.pyplot as plt
+        x = np.array(list(stats.keys()),dtype=int)
+        # Convert array from ms to seconds
+        x = x / 1000
+        fig = plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Time (s)')
+        ax.legend()
+        for name in stats_wanted:
+            try:
+                y = np.array([value[name] for value in list(stats.values())])
+                ax.plot(x, y.T, lw=1, alpha=0.8, label=name)
+            except:
+                pass
+        return mpld3.fig_to_html(fig)
+
     @keyword("Stop IXLoad Test")
     def stop_test(self):
         ''' Stop the currently loaded test. '''
@@ -129,17 +181,6 @@ class IxLoadRobot:
 
     def load_local_rxf(self, rxf_file_path):
         # TODO: Upload a local file then load it?
-        pass
-
-    def get_stats_table(self):
-        # Init
-        #traffic_table = PrettyTable()
-        try:
-                all_rows = self.ixNet.getAttribute(self._genie_page, '-rowValues')
-            except Exception as e:
-                log.error(e)
-                raise GenieTgnError("Unable to get row data from 'GENIE' "
-                                    "view page '{}'".format(i))
         pass
 
     def wait(self, reply):
