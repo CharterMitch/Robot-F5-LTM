@@ -3,3 +3,7 @@ robot-framework
 prettytable
 requests
 pysnmp
+retry
+mpld3
+matplotlib
+numpy
