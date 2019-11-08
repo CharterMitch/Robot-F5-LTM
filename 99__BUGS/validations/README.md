@@ -18,9 +18,11 @@ Validating the bug is fixed in new versions of code should show a "PASS" status.
 
 You must log the system version in the Setup Bug keyword.
 
-```*** Keywords ***
+```
+*** Keywords ***
 Setup Bug
     ${sys}              tmsh show sys version
-    Log                 ${sys}```
+    Log                 ${sys}
+```
 
 You may include an additional readme.md file in the bug folder to explain the setup, etc.
