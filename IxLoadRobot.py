@@ -131,6 +131,17 @@ class IxLoadRobot:
         # TODO: Upload a local file then load it?
         pass
 
+    def get_stats_table(self):
+        # Init
+        #traffic_table = PrettyTable()
+        try:
+                all_rows = self.ixNet.getAttribute(self._genie_page, '-rowValues')
+            except Exception as e:
+                log.error(e)
+                raise GenieTgnError("Unable to get row data from 'GENIE' "
+                                    "view page '{}'".format(i))
+        pass
+
     def wait(self, reply):
         ''' This method waits for an action to finish executing.
 

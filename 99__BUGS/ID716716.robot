@@ -3,6 +3,11 @@ Resource    ../common.resource
 Library     ../F5Rest.py  ${f5_primary}     ${user}
 Library     Dialogs
 #
+# https://cdn.f5.com/product/bugtracker/ID716716.html
+#
+# Bug validated against 13.1.0.6
+# Mitch Mahan - 11/8/2019
+#
 # Steps to Reproduce:
 #   - Create a setup similar to the following:
 #   -- Two networks connected by a router.
