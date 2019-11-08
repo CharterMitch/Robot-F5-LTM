@@ -3,20 +3,20 @@ Resource    ../common.resource
 Library     ../F5Rest.py  ${f5_primary}     ${user}
 Variables   settings.yaml
 Resource        suite.resource
-Suite Setup     Start Ixia Test     v4_http.rxf
-Suite Teardown  Stop Ixia Test
 
 *** Test Cases ***
 Round Robin
     [Documentation]         Connections are distributed evenly across all 
     ...                     members in the pool.
+    [Setup]                 Start Ixia Test     v4_http.rxf
     tmsh modify ltm pool ${pool} load-balancing-mode round-robin
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    round-robin
     tmsh reset-stats ltm pool
     Log F5 Statistics       ${pool}     ${virtual_server}
+    # Gather IXIA start and log a chart.
     ${stats}=               Gather IXLoad Stats
-    @{list}=                Create List | HTTP Concurrent Connections | HTTP Simulated Users
+    @{list}=                Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     ${chart}=               IXLoad Chart ${stats} @list
     Log                     ${chart}
     # Wait a while for ixia test traffic
@@ -34,6 +34,7 @@ Round Robin
     Should be true          ${total_requests_2}>0
     Log                     Round Robin connection difference is ${diff}
     Log F5 Statistics       ${pool}     ${virtual_server}
+    [Teardown]              Start Ixia Test     v4_http.rxf
 
 Member Ratio
     [Documentation]         Connections are sent to a member with a high ratio 

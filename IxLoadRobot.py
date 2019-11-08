@@ -110,19 +110,18 @@ class IxLoadRobot:
 
     @keyword("Gather IXLoad Stats")
     def gather_stats(self):
-        logger.warn('Gathering stats while IXIA test runs.\
-                This will wait for the full test to complete.')
+        logger.warn('Gathering stats while IXIA test runs.')
         _dict = {}
         test_url = urljoin(self.url, 'ixload/test/activeTest')
         stats_url = urljoin(self.url, 'ixload/stats/HTTPClient/values')
-        r = self.s.connect.s.get(test_url)
+        r = self.s.get(test_url)
         if r.json()['currentState'] != 'Running':
             logger.warn('Please start an IXIA test before gathering stats.')
         while r.json()['currentState'] == 'Running':
             # Add stats to the dictionary placeholder
-            _dict.update(self.s.connect.s.get(stats_url).json())
+            _dict.update(self.s.get(stats_url).json())
             time.sleep(4)
-            r = self.s.connect.s.get(test_url)
+            r = self.s.get(test_url)
         return _dict
 
     @keyword("IXLoad Chart ${stats} ${stats_wanted}")
@@ -145,7 +144,7 @@ class IxLoadRobot:
         from mpld3.utils import get_id
         import numpy as np
         import matplotlib.pyplot as plt
-        x = np.array(list(stats.keys()),dtype=int)
+        x = np.array(list(stats.keys()), dtype=int)
         # Convert array from ms to seconds
         x = x / 1000
         fig = plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
