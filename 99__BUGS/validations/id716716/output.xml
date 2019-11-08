@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 3.1.2 (Python 3.7.3 on win32)" generated="20191108 09:58:52.499" rpa="false">
+<suite id="s1" name="F5 Ltm" source="C:\Users\p2901112\Documents\robots\f5_ltm">
+<kw name="Setup lab" type="setup">
+<doc>Configure the lab topology for all of the test cases.
+This requires the F5s to be previously licensed.</doc>
+<kw name="Run Keyword If" library="BuiltIn">
+<doc>Runs the given keyword with the given arguments, if ``condition`` is true.</doc>
+<arguments>
+<arg>'${default_config}'=='True'</arg>
+<arg>Default configurations</arg>
+</arguments>
+<status status="PASS" starttime="20191108 09:58:53.484" endtime="20191108 09:58:53.485"></status>
+</kw>
+<kw name="Run Keyword If" library="BuiltIn">
+<doc>Runs the given keyword with the given arguments, if ``condition`` is true.</doc>
+<arguments>
+<arg>'${send_base_config}'=='True'</arg>
+<arg>Load Base Config</arg>
+</arguments>
+<status status="PASS" starttime="20191108 09:58:53.486" endtime="20191108 09:58:53.486"></status>
+</kw>
+<kw name="Run Keyword If" library="BuiltIn">
+<doc>Runs the given keyword with the given arguments, if ``condition`` is true.</doc>
+<arguments>
+<arg>'${send_imish_config}'=='True'</arg>
+<arg>Load imish Config</arg>
+</arguments>
+<status status="PASS" starttime="20191108 09:58:53.487" endtime="20191108 09:58:53.487"></status>
+</kw>
+<status status="PASS" starttime="20191108 09:58:53.484" endtime="20191108 09:58:53.488"></status>
+</kw>
+<suite id="s1-s1" name="BUGS" source="C:\Users\p2901112\Documents\robots\f5_ltm\99__BUGS">
+<suite id="s1-s1-s1" name="ID716716" source="C:\Users\p2901112\Documents\robots\f5_ltm\99__BUGS\ID716716.robot">
+<test id="s1-s1-s1-t1" name="ID716716">
+<kw name="Setup Bug" type="setup">
+<kw name="tmsh show sys version" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<assign>
+<var>${sys}</var>
+</assign>
+<msg timestamp="20191108 09:58:53.836" level="INFO">${sys} = 
+Sys::Version
+Main Package
+  Product     BIG-IP
+  Version     13.1.0.6
+  Build       0.0.3
+  Edition     Point Release 6
+  Date        Fri Apr 20 18:04:26 PDT 2018
+
+</msg>
+<status status="PASS" starttime="20191108 09:58:53.599" endtime="20191108 09:58:53.836"></status>
+</kw>
+<kw name="Log" library="BuiltIn">
+<doc>Logs the given message with the given level.</doc>
+<arguments>
+<arg>${sys}</arg>
+</arguments>
+<msg timestamp="20191108 09:58:53.838" level="INFO">
+Sys::Version
+Main Package
+  Product     BIG-IP
+  Version     13.1.0.6
+  Build       0.0.3
+  Edition     Point Release 6
+  Date        Fri Apr 20 18:04:26 PDT 2018
+
+</msg>
+<status status="PASS" starttime="20191108 09:58:53.837" endtime="20191108 09:58:53.838"></status>
+</kw>
+<kw name="tmsh create ltm node ${server} address ${server}" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 09:58:53.839" endtime="20191108 09:58:54.070"></status>
+</kw>
+<kw name="tmsh create ltm pool ${pool} { members add { ${server}:80 } monitor http profiles add {ipip}}" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 09:58:54.070" endtime="20191108 09:58:54.303"></status>
+</kw>
+<kw name="tmsh create net route internal gw ${gateway} network ${network}" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 09:58:54.304" endtime="20191108 09:58:54.534"></status>
+</kw>
+<kw name="imish -c 'enable','conf t','ip route ${network} ${gateway}'" library="F5Rest">
+<doc>Run a zebos / "imish" command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 09:58:54.534" endtime="20191108 09:58:54.589"></status>
+</kw>
+<kw name="Start Ixia Test" library="common">
+<doc>Start an IXIA test given an .rxf file name.</doc>
+<arguments>
+<arg>id716716.rxf</arg>
+</arguments>
+<kw name="Load rxf 'C:\\Users\\mmahan\\Documents\\${rxf_file}'" library="IxLoadRobot">
+<doc>Load and RXF file on the remote IXLoad Server</doc>
+<msg timestamp="20191108 09:58:54.590" level="WARN">Sending 'start' to IXIA API Session. ~10 seconds...</msg>
+<msg timestamp="20191108 09:59:24.418" level="WARN">Loading RXF file C:\Users\mmahan\Documents\id716716.rxf. Takes ~3 minutes.</msg>
+<status status="PASS" starttime="20191108 09:58:54.590" endtime="20191108 10:02:06.323"></status>
+</kw>
+<kw name="Start IXLoad Test" library="IxLoadRobot">
+<doc>Start the currently loaded test.</doc>
+<msg timestamp="20191108 10:02:06.324" level="WARN">Starting IXIA Test...</msg>
+<status status="PASS" starttime="20191108 10:02:06.324" endtime="20191108 10:02:43.578"></status>
+</kw>
+<status status="PASS" starttime="20191108 09:58:54.589" endtime="20191108 10:02:43.578"></status>
+</kw>
+<kw name="Wait Until Keyword Succeeds" library="BuiltIn">
+<doc>Runs the specified keyword and retries if it fails.</doc>
+<arguments>
+<arg>30 sec</arg>
+<arg>1 sec</arg>
+<arg>Pool is available</arg>
+</arguments>
+<kw name="Pool is available">
+<kw name="Get stats for pool ${pool}" library="F5Rest">
+<doc>HTTP GET an F5 pool by name in the /Common partition.
+Then load the pool members statistics and return them
+as a dictionary object.</doc>
+<assign>
+<var>&amp;{stats}</var>
+</assign>
+<msg timestamp="20191108 10:02:43.689" level="INFO">&amp;{stats} = { /Common/198.18.0.10={'addr': {'description': '198.18.0.10'}, 'connq_ageEdm': {'value': 0}, 'connq_ageEma': {'value': 0}, 'connq_ageHead': {'value': 0}, 'connq_ageMax': {'value': 0}, 'connq_depth': {...</msg>
+<status status="PASS" starttime="20191108 10:02:43.580" endtime="20191108 10:02:43.689"></status>
+</kw>
+<kw name="Set Variable" library="BuiltIn">
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<arguments>
+<arg>${stats['/Common/${server}']['monitorStatus']['description']}</arg>
+</arguments>
+<assign>
+<var>${status}</var>
+</assign>
+<msg timestamp="20191108 10:02:43.690" level="INFO">${status} = down</msg>
+<status status="PASS" starttime="20191108 10:02:43.689" endtime="20191108 10:02:43.690"></status>
+</kw>
+<kw name="Should Be Equal" library="BuiltIn">
+<doc>Fails if the given objects are unequal.</doc>
+<arguments>
+<arg>${status}</arg>
+<arg>up</arg>
+</arguments>
+<msg timestamp="20191108 10:02:43.691" level="FAIL">down != up</msg>
+<status status="FAIL" starttime="20191108 10:02:43.690" endtime="20191108 10:02:43.692"></status>
+</kw>
+<status status="FAIL" starttime="20191108 10:02:43.580" endtime="20191108 10:02:43.692"></status>
+</kw>
+<kw name="Pool is available">
+<kw name="Get stats for pool ${pool}" library="F5Rest">
+<doc>HTTP GET an F5 pool by name in the /Common partition.
+Then load the pool members statistics and return them
+as a dictionary object.</doc>
+<assign>
+<var>&amp;{stats}</var>
+</assign>
+<msg timestamp="20191108 10:02:44.752" level="INFO">&amp;{stats} = { /Common/198.18.0.10={'addr': {'description': '198.18.0.10'}, 'connq_ageEdm': {'value': 0}, 'connq_ageEma': {'value': 0}, 'connq_ageHead': {'value': 0}, 'connq_ageMax': {'value': 0}, 'connq_depth': {...</msg>
+<status status="PASS" starttime="20191108 10:02:44.694" endtime="20191108 10:02:44.752"></status>
+</kw>
+<kw name="Set Variable" library="BuiltIn">
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<arguments>
+<arg>${stats['/Common/${server}']['monitorStatus']['description']}</arg>
+</arguments>
+<assign>
+<var>${status}</var>
+</assign>
+<msg timestamp="20191108 10:02:44.753" level="INFO">${status} = down</msg>
+<status status="PASS" starttime="20191108 10:02:44.752" endtime="20191108 10:02:44.753"></status>
+</kw>
+<kw name="Should Be Equal" library="BuiltIn">
+<doc>Fails if the given objects are unequal.</doc>
+<arguments>
+<arg>${status}</arg>
+<arg>up</arg>
+</arguments>
+<msg timestamp="20191108 10:02:44.754" level="FAIL">down != up</msg>
+<status status="FAIL" starttime="20191108 10:02:44.754" endtime="20191108 10:02:44.754"></status>
+</kw>
+<status status="FAIL" starttime="20191108 10:02:44.693" endtime="20191108 10:02:44.755"></status>
+</kw>
+<kw name="Pool is available">
+<kw name="Get stats for pool ${pool}" library="F5Rest">
+<doc>HTTP GET an F5 pool by name in the /Common partition.
+Then load the pool members statistics and return them
+as a dictionary object.</doc>
+<assign>
+<var>&amp;{stats}</var>
+</assign>
+<msg timestamp="20191108 10:02:45.801" level="INFO">&amp;{stats} = { /Common/198.18.0.10={'addr': {'description': '198.18.0.10'}, 'connq_ageEdm': {'value': 0}, 'connq_ageEma': {'value': 0}, 'connq_ageHead': {'value': 0}, 'connq_ageMax': {'value': 0}, 'connq_depth': {...</msg>
+<status status="PASS" starttime="20191108 10:02:45.757" endtime="20191108 10:02:45.801"></status>
+</kw>
+<kw name="Set Variable" library="BuiltIn">
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<arguments>
+<arg>${stats['/Common/${server}']['monitorStatus']['description']}</arg>
+</arguments>
+<assign>
+<var>${status}</var>
+</assign>
+<msg timestamp="20191108 10:02:45.802" level="INFO">${status} = down</msg>
+<status status="PASS" starttime="20191108 10:02:45.801" endtime="20191108 10:02:45.802"></status>
+</kw>
+<kw name="Should Be Equal" library="BuiltIn">
+<doc>Fails if the given objects are unequal.</doc>
+<arguments>
+<arg>${status}</arg>
+<arg>up</arg>
+</arguments>
+<msg timestamp="20191108 10:02:45.802" level="FAIL">down != up</msg>
+<status status="FAIL" starttime="20191108 10:02:45.802" endtime="20191108 10:02:45.803"></status>
+</kw>
+<status status="FAIL" starttime="20191108 10:02:45.756" endtime="20191108 10:02:45.803"></status>
+</kw>
+<kw name="Pool is available">
+<kw name="Get stats for pool ${pool}" library="F5Rest">
+<doc>HTTP GET an F5 pool by name in the /Common partition.
+Then load the pool members statistics and return them
+as a dictionary object.</doc>
+<assign>
+<var>&amp;{stats}</var>
+</assign>
+<msg timestamp="20191108 10:02:46.871" level="INFO">&amp;{stats} = { /Common/198.18.0.10={'addr': {'description': '198.18.0.10'}, 'connq_ageEdm': {'value': 0}, 'connq_ageEma': {'value': 0}, 'connq_ageHead': {'value': 0}, 'connq_ageMax': {'value': 0}, 'connq_depth': {...</msg>
+<status status="PASS" starttime="20191108 10:02:46.806" endtime="20191108 10:02:46.871"></status>
+</kw>
+<kw name="Set Variable" library="BuiltIn">
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<arguments>
+<arg>${stats['/Common/${server}']['monitorStatus']['description']}</arg>
+</arguments>
+<assign>
+<var>${status}</var>
+</assign>
+<msg timestamp="20191108 10:02:46.873" level="INFO">${status} = up</msg>
+<status status="PASS" starttime="20191108 10:02:46.872" endtime="20191108 10:02:46.873"></status>
+</kw>
+<kw name="Should Be Equal" library="BuiltIn">
+<doc>Fails if the given objects are unequal.</doc>
+<arguments>
+<arg>${status}</arg>
+<arg>up</arg>
+</arguments>
+<status status="PASS" starttime="20191108 10:02:46.873" endtime="20191108 10:02:46.874"></status>
+</kw>
+<status status="PASS" starttime="20191108 10:02:46.804" endtime="20191108 10:02:46.874"></status>
+</kw>
+<status status="PASS" starttime="20191108 10:02:43.578" endtime="20191108 10:02:46.874"></status>
+</kw>
+<kw name="Log" library="BuiltIn">
+<doc>Logs the given message with the given level.</doc>
+<arguments>
+<arg>Deleting kernel route, this should core TMM on next health check.</arg>
+<arg>WARN</arg>
+</arguments>
+<msg timestamp="20191108 10:02:46.875" level="WARN">Deleting kernel route, this should core TMM on next health check.</msg>
+<status status="PASS" starttime="20191108 10:02:46.875" endtime="20191108 10:02:46.877"></status>
+</kw>
+<kw name="tmsh delete net route internal" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 10:02:46.878" endtime="20191108 10:02:47.140"></status>
+</kw>
+<status status="PASS" starttime="20191108 09:58:53.598" endtime="20191108 10:02:47.140"></status>
+</kw>
+<kw name="Sleep" library="BuiltIn">
+<doc>Pauses the test executed for the given time.</doc>
+<arguments>
+<arg>30</arg>
+</arguments>
+<msg timestamp="20191108 10:03:17.142" level="INFO">Slept 30 seconds</msg>
+<status status="PASS" starttime="20191108 10:02:47.141" endtime="20191108 10:03:17.143"></status>
+</kw>
+<kw name="bash grep tmrouted /var/log/ltm" library="F5Rest">
+<doc>Run a bash command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<assign>
+<var>${var}</var>
+</assign>
+<msg timestamp="20191108 10:03:17.193" level="INFO">${var} = Nov  8 10:02:43 slb01sqsccc err tmm2[12471]: 01010054:3: tmrouted connection closed</msg>
+<status status="PASS" starttime="20191108 10:03:17.143" endtime="20191108 10:03:17.193"></status>
+</kw>
+<kw name="Log" library="BuiltIn">
+<doc>Logs the given message with the given level.</doc>
+<arguments>
+<arg>${var}</arg>
+</arguments>
+<msg timestamp="20191108 10:03:17.194" level="INFO">Nov  8 10:02:43 slb01sqsccc err tmm2[12471]: 01010054:3: tmrouted connection closed</msg>
+<status status="PASS" starttime="20191108 10:03:17.194" endtime="20191108 10:03:17.194"></status>
+</kw>
+<kw name="Should Not Match Regexp" library="BuiltIn">
+<doc>Fails if ``string`` matches ``pattern`` as a regular expression.</doc>
+<arguments>
+<arg>${var}</arg>
+<arg>tmrouted connection closed</arg>
+</arguments>
+<msg timestamp="20191108 10:03:17.196" level="FAIL">'Nov  8 10:02:43 slb01sqsccc err tmm2[12471]: 01010054:3: tmrouted connection closed' matches 'tmrouted connection closed'</msg>
+<status status="FAIL" starttime="20191108 10:03:17.195" endtime="20191108 10:03:17.196"></status>
+</kw>
+<kw name="Teardown" type="teardown">
+<kw name="imish -c 'enable','conf t','no ip route ${network} ${gateway}'" library="F5Rest">
+<doc>Run a zebos / "imish" command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 10:03:17.197" endtime="20191108 10:03:17.254"></status>
+</kw>
+<kw name="tmsh delete ltm pool ${pool}" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 10:03:17.254" endtime="20191108 10:03:17.490"></status>
+</kw>
+<kw name="tmsh delete ltm node ${server}" library="F5Rest">
+<doc>Run a tmsh command on an F5 BIG-IP device.
+Return any output from the command.</doc>
+<status status="PASS" starttime="20191108 10:03:17.491" endtime="20191108 10:03:17.723"></status>
+</kw>
+<status status="PASS" starttime="20191108 10:03:17.196" endtime="20191108 10:03:17.724"></status>
+</kw>
+<doc>Bug ID 716716: Under certain circumstances having a kernel
+route but no TMM route can lead to a TMM core.
+https://cdn.f5.com/product/bugtracker/ID716716.html</doc>
+<status status="FAIL" starttime="20191108 09:58:53.596" endtime="20191108 10:03:17.725" critical="yes">'Nov  8 10:02:43 slb01sqsccc err tmm2[12471]: 01010054:3: tmrouted connection closed' matches 'tmrouted connection closed'</status>
+</test>
+<status status="FAIL" starttime="20191108 09:58:53.495" endtime="20191108 10:03:17.732"></status>
+</suite>
+<doc>Testing for Specific Known Bugs in F5 Products</doc>
+<status status="FAIL" starttime="20191108 09:58:53.488" endtime="20191108 10:03:17.740"></status>
+</suite>
+<kw name="Teardown Lab" type="teardown">
+<doc>Default the configurations.</doc>
+<kw name="No Operation" library="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" starttime="20191108 10:03:17.771" endtime="20191108 10:03:17.772"></status>
+</kw>
+<status status="PASS" starttime="20191108 10:03:17.769" endtime="20191108 10:03:17.772"></status>
+</kw>
+<doc>F5 New Code Validation</doc>
+<status status="FAIL" starttime="20191108 09:58:52.505" endtime="20191108 10:03:17.773"></status>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1">Critical Tests</stat>
+<stat pass="0" fail="1">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="0" fail="1" id="s1" name="F5 Ltm">F5 Ltm</stat>
+<stat pass="0" fail="1" id="s1-s1" name="BUGS">F5 Ltm.BUGS</stat>
+<stat pass="0" fail="1" id="s1-s1-s1" name="ID716716">F5 Ltm.BUGS.ID716716</stat>
+</suite>
+</statistics>
+<errors>
+<msg timestamp="20191108 09:58:54.590" level="WARN">Sending 'start' to IXIA API Session. ~10 seconds...</msg>
+<msg timestamp="20191108 09:59:24.418" level="WARN">Loading RXF file C:\Users\mmahan\Documents\id716716.rxf. Takes ~3 minutes.</msg>
+<msg timestamp="20191108 10:02:06.324" level="WARN">Starting IXIA Test...</msg>
+<msg timestamp="20191108 10:02:46.875" level="WARN">Deleting kernel route, this should core TMM on next health check.</msg>
+</errors>
+</robot>
