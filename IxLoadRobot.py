@@ -108,6 +108,12 @@ class IxLoadRobot:
         self.apply_config()
         self._test_operation('runTest')
 
+    @keyword("Stop IXLoad Test")
+    def stop_test(self):
+        ''' Stop the currently loaded test. '''
+        logger.info("Stopping IXIA Test ...")
+        self._test_operation('gracefulStopRun')
+
     @keyword("Gather IXLoad Stats")
     def gather_stats(self):
         logger.warn('Gathering stats while IXIA test runs.')
@@ -157,12 +163,6 @@ class IxLoadRobot:
             except KeyError:
                 pass
         return mpld3.fig_to_html(fig)
-
-    @keyword("Stop IXLoad Test")
-    def stop_test(self):
-        ''' Stop the currently loaded test. '''
-        logger.info("Stopping IXIA Test ...")
-        self._test_operation('gracefulStopRun')
 
     def _test_operation(self, operation, data={}):
         ''' Send an HTTP POST to a given test operation URL
