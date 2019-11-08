@@ -126,16 +126,15 @@ class IxLoadRobot:
 
     @keyword("IXLoad Chart ${stats} ${stats_wanted}")
     def create_html_chart(self, stats, stats_wanted):
-        ''' Create an HTML chart from IXLoad stats gathered from the gather_stats
-            command.
+        ''' Create an HTML chart from IXLoad stats gathered from the
+            gather_stats command.
 
             A list of available stats for your test can be found in the API:
-            Example:
-            http://172.22.73.14:8080/api/v0/sessions/191/ixload/stats/HTTPClient/availableStats
+            /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
 
-            Example robot entry:
+            Example robot use:
             ${stats}=   Gather IXLoad Stats
-            @{list}=    Create List | HTTP Concurrent Connections | HTTP Simulated Users
+            @{list}=    Create List   HTTP Concurrent Connections ...
             ${chart}=   IXLoad Chart ${stats} @list
             Log         ${chart}
         '''
@@ -147,7 +146,7 @@ class IxLoadRobot:
         x = np.array(list(stats.keys()), dtype=int)
         # Convert array from ms to seconds
         x = x / 1000
-        fig = plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
+        fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         ax.set_xlabel('Time (s)')
         ax.legend()
@@ -155,7 +154,7 @@ class IxLoadRobot:
             try:
                 y = np.array([value[name] for value in list(stats.values())])
                 ax.plot(x, y.T, lw=1, alpha=0.8, label=name)
-            except:
+            except KeyError:
                 pass
         return mpld3.fig_to_html(fig)
 
