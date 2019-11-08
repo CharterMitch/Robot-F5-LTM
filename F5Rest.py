@@ -97,7 +97,7 @@ class F5Rest():
         try:
             return command.commandResult.strip()
         except LazyAttributesRequired:
-            pass
+            return ''
 
     @keyword('imish -c ${commands}')
     def imish(self, commands, route_domain=0):

@@ -40,15 +40,20 @@ ${gateway}      198.18.96.2
 
 *** Keywords ***
 Setup Bug
-    # Delete any existing core files?
-    # bash rm -f /var/core/*
+    # Log the software version of the F5
+    ${sys}              tmsh show sys version
+    Log                 ${sys}
     # Setup F5 for bug
     tmsh create ltm node ${server} address ${server}
     # Update below to add ipip profile
     tmsh create ltm pool ${pool} { members add { ${server}:80 } monitor http profiles add {ipip}}
     tmsh create net route internal gw ${gateway} network ${network}
     imish -c 'enable','conf t','ip route ${network} ${gateway}'
-    Sleep   30
+    # Start an IXIA test with a simple server to test aginst (198.18.0.10)
+    Start Ixia Test     id716716.rxf
+    # Wait                          Wait for    Retry every     Commmand
+    Wait until keyword succeeds     30 sec      1 sec           Pool is available
+    Log     Deleting kernel route, this should core TMM on next health check.     WARN
     tmsh delete net route internal
 
 Teardown
@@ -56,16 +61,20 @@ Teardown
     tmsh delete ltm pool ${pool}
     tmsh delete ltm node ${server}
 
+Pool is available
+    &{stats}=           Get stats for pool ${pool}
+    ${status}           Set variable    ${stats['/Common/${server}']['monitorStatus']['description']}
+    Should be equal     ${status}   up
+
 *** Test Cases ***
 ID716716
     [Documentation]     Bug ID 716716: Under certain circumstances having a kernel
     ...                 route but no TMM route can lead to a TMM core.
     ...                 https://cdn.f5.com/product/bugtracker/ID716716.html
     [Setup]             Setup Bug
-    Sleep               120
-    # Make sure there are no core dump files
-    ${var}              bash ls -l /var/core/
+    Sleep               30
+    ${var}              bash grep tmrouted /var/log/ltm
     Log                 ${var}
-    # Total number of files should be 0
-    Should Match        ${var}   total 0
+    # If tmrouted connection closed is in the log file; tmm has cored
+    Should Not Match Regexp      ${var}   tmrouted connection closed
     [Teardown]          Teardown

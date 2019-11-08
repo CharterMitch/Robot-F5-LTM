@@ -77,7 +77,6 @@ class IxLoadRobot:
 
             This must be done before issuing operations commands!
         '''
-        # TODO: Add check to see if session is already active.
         if not self.session_started:
             logger.warn("Sending 'start' to IXIA API Session. ~10 seconds...")
             _url = urljoin(self.url, 'operations/start')
@@ -93,7 +92,7 @@ class IxLoadRobot:
         self.start_session()
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
-        logger.warn("Loading RXF file {}".format(file_path))
+        logger.warn("Loading RXF file {}. Takes ~3 minutes.".format(file_path))
         data = json.dumps({"fullPath": file_path})
         operation = 'loadTest'
         self._test_operation(operation, data=data)
