@@ -9,7 +9,7 @@ Show Net Interface
 
 Show Net Trunk
     [Documentation]         Log trunk information, validate trunks are up.
-    tmsh show net trunk
+    ${var}=                 tmsh show net trunk
     # Validate UplinkTrunk and HA_trunk are in up state
     Should Match Regexp     ${var}   UplinkTrunk .+up
     Should Match Regexp     ${var}   HA_trunk .+up
@@ -18,7 +18,7 @@ Disable Interface
     [Documentation]         Disable an interface and validate it goes offline.
     [Setup]                 tmsh modify net interface 2.1 disabled
     Sleep                   2
-    tmsh show net interface 2.1
+    ${var}=                 tmsh show net interface 2.1
     Should Match Regexp     ${var}   2.1 .+disabled
     [Teardown]              tmsh modify net interface 2.1 enabled
 
@@ -26,7 +26,7 @@ Trunk bandwidth changes with interface status
     [Documentation]         Trunk bandwidth should change with member status.
     [Setup]                 tmsh modify net interface 2.1 disabled
     Sleep                   2
-    tmsh show net trunk UplinkTrunk
+    ${var}=                 tmsh show net trunk UplinkTrunk
     # Bandwidth should be 10G with one interface down
     Should Match Regexp     ${var}   up.+10000
     tmsh modify net interface 2.1 enabled

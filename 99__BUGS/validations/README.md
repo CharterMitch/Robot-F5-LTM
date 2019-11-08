@@ -16,13 +16,12 @@ Validating the bug is fixed in new versions of code should show a "PASS" status.
 
 ## Required keywords
 
-You must log the system version in the Setup Bug keyword.
+You must show the system version in the Setup Bug keyword.
 
 ```
 *** Keywords ***
 Setup Bug
-    ${sys}              tmsh show sys version
-    Log                 ${sys}
+    tmsh show sys version
 ```
 
 You may include an additional readme.md file in the bug folder to explain the setup, etc.

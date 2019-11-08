@@ -46,8 +46,7 @@ ${gateway}      198.18.96.2
 *** Keywords ***
 Setup Bug
     # Log the software version of the F5
-    ${sys}              tmsh show sys version
-    Log                 ${sys}
+    tmsh show sys version
     # Setup F5 for bug
     tmsh create ltm node ${server} address ${server}
     # Update below to add ipip profile
@@ -68,7 +67,7 @@ Teardown
 
 Pool is available
     &{stats}=           Get stats for pool ${pool}
-    ${status}           Set variable    ${stats['/Common/${server}']['monitorStatus']['description']}
+    ${status}=          Set variable    ${stats['/Common/${server}']['monitorStatus']['description']}
     Should be equal     ${status}   up
 
 *** Test Cases ***
@@ -78,8 +77,7 @@ ID716716
     ...                 https://cdn.f5.com/product/bugtracker/ID716716.html
     [Setup]             Setup Bug
     Sleep               30
-    ${var}              bash grep tmrouted /var/log/ltm
-    Log                 ${var}
+    ${var}=             bash grep tmrouted /var/log/ltm
     # If tmrouted connection closed is in the log file; tmm has cored
     Should Not Match Regexp      ${var}   tmrouted connection closed
     [Teardown]          Teardown
