@@ -18,7 +18,7 @@ Round Robin
     ${stats}=               Gather IXLoad Stats
     @{list}=                Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     ${chart}=               IXLoad Chart ${stats} @list
-    Log                     ${chart}
+    Log                     ${chart}    html=true
     # Wait a while for ixia test traffic
     # Use the REST API to get pool stats so we can use native python integers
     # Either this or a tmsh command, lots of regex and conversion from string to int
@@ -34,12 +34,13 @@ Round Robin
     Should be true          ${total_requests_2}>0
     Log                     Round Robin connection difference is ${diff}
     Log F5 Statistics       ${pool}     ${virtual_server}
-    [Teardown]              Start Ixia Test     v4_http.rxf
+    [Teardown]              Stop Ixia Test
 
 Member Ratio
     [Documentation]         Connections are sent to a member with a high ratio 
     ...                     number more often than a member with a lower ratio 
     ...                     number.
+    [Setup]                 Start Ixia Test     v4_http.rxf
     tmsh modify ltm pool ${pool} load-balancing-mode ratio-member
     ${pool_info}=           Get pool ${pool}
     Should be equal         ${pool_info.loadBalancingMode}    ratio-member
@@ -64,6 +65,7 @@ Member Ratio
     Should be true          ${total_requests_2}>0
     Log     Member ratio connection difference is ${diff}
     Log F5 Statistics       ${pool}     ${virtual_server}
+    [Teardown]              Stop Ixia Test
 
 Fastest App Response
     [Documentation]         Not Implemented    

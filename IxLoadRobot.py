@@ -112,7 +112,10 @@ class IxLoadRobot:
     def stop_test(self):
         ''' Stop the currently loaded test. '''
         logger.info("Stopping IXIA Test ...")
-        self._test_operation('gracefulStopRun')
+        test_url = urljoin(self.url, 'ixload/test/activeTest')
+        r = self.s.get(test_url)
+        if r.json()['currentState'] == 'Running':
+            self._test_operation('gracefulStopRun')
 
     @keyword("Gather IXLoad Stats")
     def gather_stats(self):
