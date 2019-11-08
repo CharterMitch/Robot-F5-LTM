@@ -47,6 +47,8 @@ ${gateway}      198.18.96.2
 Setup Bug
     # Log the software version of the F5
     tmsh show sys version
+    # Clear ltm log
+    bash echo '' > /var/log/ltm
     # Setup F5 for bug
     tmsh create ltm node ${server} address ${server}
     # Update below to add ipip profile

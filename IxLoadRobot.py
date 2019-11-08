@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlencode
 from urllib3 import HTTPConnectionPool
 
 import requests
+from retry import retry
 from robot.api.deco import keyword
 from robot.api import logger
 
@@ -112,10 +113,10 @@ class IxLoadRobot:
     def stop_test(self):
         ''' Stop the currently loaded test. '''
         logger.info("Stopping IXIA Test ...")
-        test_url = urljoin(self.url, 'ixload/test/activeTest')
-        r = self.s.get(test_url)
-        if r.json()['currentState'] == 'Running':
+        try:
             self._test_operation('gracefulStopRun')
+        except:
+            pass
 
     @keyword("Gather IXLoad Stats")
     def gather_stats(self):
@@ -167,6 +168,7 @@ class IxLoadRobot:
         ax.legend()
         return mpld3.fig_to_html(fig)
 
+    @retry(tries=3, delay=5)
     def _test_operation(self, operation, data={}):
         ''' Send an HTTP POST to a given test operation URL
             then wait for the operation to complete.

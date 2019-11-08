@@ -114,7 +114,8 @@ class F5Rest():
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any output
-            logger.info(command.commandResult)
+            if 'conf' not in cmd:
+                logger.info(command.commandResult)
             return command.commandResult
         except LazyAttributesRequired:
             return True
