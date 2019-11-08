@@ -175,6 +175,11 @@ class IxLoadRobot:
 
             http://<host>:<port>/api/v0/sessions/<session id>/
             ixload/test/operations/<operation>
+
+            Added retry library decorator as stoping tests, starting tests,
+            etc. can leave the API in an odd state for many seconds and
+            programming for all the interim states would require a lot
+            more logic than just a quick resend of the command.
         '''
         operation = 'ixload/test/operations/{}'.format(operation)
         _url = urljoin(self.url, operation)
