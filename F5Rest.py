@@ -98,6 +98,7 @@ class F5Rest():
         logger.info(cmd)
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
+            logger.info(command.commandResult)
             return command.commandResult.strip()
         except LazyAttributesRequired:
             return ''
@@ -113,6 +114,7 @@ class F5Rest():
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any output
+            logger.info(command.commandResult)
             return command.commandResult
         except LazyAttributesRequired:
             return True
@@ -128,17 +130,22 @@ class F5Rest():
         command = self.mgmt.tm.util.bash.exec_cmd('run', utilCmdArgs=cmd)
         try:
             # Return any output
+            logger.info(command.commandResult)
             return command.commandResult
         except LazyAttributesRequired:
             return True
 
     @keyword('get pool ${pool}')
     def get_pool(self, pool):
-        return self.mgmt.tm.ltm.pools.pool.load(partition='Common', name=pool)
+        data = self.mgmt.tm.ltm.pools.pool.load(partition='Common', name=pool)
+        logger.info(data)
+        return data
 
     @keyword('get partition ${partition} pool ${pool}')
     def get_pool_in_partition(self, pool, partition):
-        return self.mgmt.tm.ltm.pools.pool.load(partition=partition, name=pool)
+        data = self.mgmt.tm.ltm.pools.pool.load(partition=partition, name=pool)
+        logger.info(data)
+        return data
 
     @keyword('get stats for pool ${pool}')
     def get_pool_stats(self, pool):
@@ -189,6 +196,7 @@ class F5Rest():
             dict_ = {mbr_stats.stat.nodeName.description: mbr_stats.stat}
             stats.update(dict_)
         # Return { node: node_stats_dict } to Robot Keyword
+        logger.info(stats)
         return stats
 
     @keyword('get ssl profile ${profile} stats')

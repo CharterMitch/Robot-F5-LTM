@@ -8,9 +8,8 @@ Port-channel Load Balancing
     [Setup]         Start Ixia Test     lacp_test.rxf
     # Reset interface statistics
     tmsh reset net interface
-    ${var}          tmsh show net interface all-properties | grep Uplink
-    Log             ${var}
-    # Let Traffic Load-balance across links
-    Sleep           60
-    ${var}          tmsh show net interface all-properties | grep Uplink
-    Log             ${var}
+    tmsh show net interface all-properties | grep Uplink
+    # Run load for 2 minutes
+    Sleep   120
+    tmsh show net interface all-properties | grep Uplink
+    # Compare interface results ...
