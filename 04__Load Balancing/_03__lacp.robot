@@ -8,7 +8,7 @@ Port-channel Load Balancing
     [Setup]             Start Ixia Test     v4_http.rxf
     # Reset interface statistics
     tmsh reset net interface
-    tmsh show net interface all-properties | grep Uplink
+    tmsh show net interface all-properties
     # Run load for 2 minutes
-    tmsh show net interface all-properties | grep Uplink
+    tmsh show net interface all-properties
     # Compare interface results ...
