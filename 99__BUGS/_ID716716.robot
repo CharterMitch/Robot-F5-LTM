@@ -47,6 +47,7 @@ ${gateway}      198.18.96.2
 Setup Bug
     # Log the software version of the F5
     tmsh show sys version
+    bash zebos check
     # Clear ltm log
     bash echo '' > /var/log/ltm
     # Setup F5 for bug
@@ -61,6 +62,7 @@ Setup Bug
     Wait until keyword succeeds     30 sec      1 sec           Pool is available
     Log     Deleting kernel route. This will core TMM on next health check if bug is present.     WARN
     tmsh delete net route internal
+    bash zebos check
 
 Teardown
     imish -c 'enable','conf t','no ip route ${network} ${gateway}'
@@ -82,4 +84,5 @@ ID716716
     ${var}=             bash grep tmrouted /var/log/ltm
     # If tmrouted connection closed is in the log file; tmm has cored
     Should Not Match Regexp      ${var}   tmrouted connection closed
+    bash zebos check
     [Teardown]          Teardown
