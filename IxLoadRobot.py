@@ -89,7 +89,7 @@ class IxLoadRobot:
 
     @keyword('load rxf ${rxf_file_path}')
     def load_rxf(self, rxf_file_path):
-        ''' Load and RXF file on the remote IXLoad Server '''
+        ''' Load an RXF file on the remote IXLoad Server '''
         self.start_session()
         # Cleanup file path replacing 's and whitespace
         file_path = rxf_file_path.replace("'", "").strip()
