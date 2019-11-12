@@ -8,8 +8,8 @@ Build Ixia Chart
     [Documentation]     Gather IXIA test stats for the currently running test
     ...                 then return an HTML graph.
     ${stats}=           Gather IXLoad Stats
-    @{list}=            Create List      HTTPS Concurrent Connections    HTTPS Simulated Users    HTTPS Requests Failed
-    ${chart}=           IXLoad Chart ${stats} @list
+    @{graph}=           Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    ${chart}=           IXLoad Chart ${stats} ${graph}
     [Return]            ${chart}
 
 Reset Statistics
