@@ -8,13 +8,13 @@ Build Ixia Chart
     [Documentation]     Gather IXIA test stats for the currently running test
     ...                 then return an HTML graph.
     ${stats}=           Gather IXLoad Stats
-    @{list}=            Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    @{list}=            Create List      HTTPS Concurrent Connections    HTTPS Simulated Users    HTTPS Requests Failed
     ${chart}=           IXLoad Chart ${stats} @list
     [Return]            ${chart}
 
 Reset Statistics
     [Documentation]     Reset various statistics on the F5.
-    ${test} =   tmsh reset-stats ltm virtual
+    ${test}=            tmsh reset-stats ltm virtual
     tmsh reset-stats ltm pool
     tmsh reset-stats ltm profile client-ssl clientssl
 

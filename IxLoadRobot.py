@@ -168,7 +168,7 @@ class IxLoadRobot:
         ax.legend()
         return mpld3.fig_to_html(fig)
 
-    @retry(tries=3, delay=5)
+    @retry(tries=5, delay=5)
     def _test_operation(self, operation, data={}):
         ''' Send an HTTP POST to a given test operation URL
             then wait for the operation to complete.
@@ -201,7 +201,7 @@ class IxLoadRobot:
             Once the aciton is finished we see if there were any errors.
         '''
         if reply.headers.get('location') is None:
-            raise AssertionError('Location headers not sent after action. {}'
+            raise AssertionError('API request failed. {}'
                                  .format(reply.text))
         else:
             action_finished = False

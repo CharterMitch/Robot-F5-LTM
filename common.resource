@@ -14,3 +14,4 @@ Start Ixia Test
 Stop Ixia Test
     [Documentation]     Gracefully stop a running IXIA test.
     stop ixload test
+    sleep 20

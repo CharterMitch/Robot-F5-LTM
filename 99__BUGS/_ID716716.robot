@@ -79,6 +79,7 @@ ID716716
     [Documentation]     Bug ID 716716: Under certain circumstances having a kernel
     ...                 route but no TMM route can lead to a TMM core.
     ...                 https://cdn.f5.com/product/bugtracker/ID716716.html
+    [Tags]              bug
     [Setup]             Setup Bug
     Sleep               30
     ${var}=             bash grep tmrouted /var/log/ltm
