@@ -5,7 +5,6 @@ Library         Dialogs
 Library         SSHLibrary
 Library         Telnet
 
-
 *** Test Cases ***
 Telnet Connection Fails
     [Documentation]     Make sure telnet to the F5 fails.
@@ -15,3 +14,11 @@ SSH Connection
     [Documentation]     SSH connection is established.
     sshlibrary.open connection     ${f5_primary}[host]
     [Teardown]          sshlibrary.close all connections
+
+SSH ACL
+    [Documentation]     Verify SSH ACL blocks connections.
+    [Setup]             tmsh modify sys sshd allow delete { ALL }
+    sshlibrary.open connection      ${f5_primary}[host]
+    Run Keyword And Expect Error    SSHException:*     sshlibrary.login    test   test
+    [Teardown]          tmsh modify sys sshd allow add { ALL }
+
