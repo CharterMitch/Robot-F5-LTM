@@ -22,7 +22,7 @@ Setup lab
 
 Load Base Config
     [Documentation]     Configure the F5 physical devices, links, ip addresses.
-    [tags]  Setup
+    [tags]              Setup
     # Default device configurations if settings.yaml is set to True
     Log     Sending TMSH commands to configure F5s  WARN
     # Load base config tmsh commands from local file
@@ -40,7 +40,7 @@ Load imish Config
 Setup Polatis
     [Documentation]     Configure the Polatis optical switch to configure 
     ...                 cross-connects properly for our lab ports.
-    [tags]  Setup
+    [tags]              Setup
     # Connect IXIA 11/1 to the nxs05sqsccc 4/2 port
     Cross-connect polatis port 1 to 323
     Cross-connect polatis port 193 to 131
@@ -48,7 +48,7 @@ Setup Polatis
     Cross-connect polatis port 4 to 324
     Cross-connect polatis port 196 to 132
 
-Default configurations
+Default Configurations
     [Documentation]     Default the F5 configurations to factory default.
     Log  Defaulting F5 Configurations!   WARN
     primary.tmsh load /sys config default
