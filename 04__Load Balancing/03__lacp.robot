@@ -13,8 +13,8 @@ Interface Load Balancing
     [Documentation]     Verify port-channel load-balancing.
     ...                 Port 2.1 and 2.2 should have equal bandwidth.
     [Setup]             Setup Test
-    Sleep               30
-    ${interfaces}=      bash tmsh show net interface all-properties \| sed -r 's/[ ]+/\|/g' \| grep Uplink \| cut -d"\|" -f 1,5,6,20
+    Sleep               120
+    ${interfaces}=      bash tmsh show net interface all-properties \| sed -r "s\/[ ]+\/\|\/g" \| grep Uplink \| cut -d"\|" -f 5,6,20
     ${interface_1}=     Get Line    ${interfaces}   0
     ${interface_2}=     Get Line    ${interfaces}   1
     Should be Equal     ${interface_1}      ${interface_2}
