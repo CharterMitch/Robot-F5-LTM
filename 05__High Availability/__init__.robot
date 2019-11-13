@@ -1,10 +1,10 @@
 *** Settings ***
 Documentation    High Availability Testing
 Resource        ../common.resource
-#Library         ../F5Rest.py  ${f5_a}   ${user}     WITH NAME  primary
-#Library         ../F5Rest.py  ${f5_b}   ${user}     WITH NAME  secondary
-#Suite Setup     Configure F5
-#Suite Teardown  Teardown
+Library         ../F5Rest.py  ${f5_a}   ${user}     WITH NAME  primary
+Library         ../F5Rest.py  ${f5_b}   ${user}     WITH NAME  secondary
+Suite Setup     Configure F5
+Suite Teardown  Teardown
 
 *** Keywords ***
 Configure F5
