@@ -53,7 +53,3 @@ Unconfigure Radius
     tmsh modify auth remote-role role-info delete {admin_group}
     tmsh modify auth remote-role role-info delete {audit_group}
     tmsh delete sys management-route radius
-
-
-
-

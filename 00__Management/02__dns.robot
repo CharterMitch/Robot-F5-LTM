@@ -8,6 +8,3 @@ DNS Request
     [Documentation]         Dig charter.com
     ${dig}=                 bash dig charter.com
     Should Match Regexp     ${dig}  Got answer:
-
-
- 
