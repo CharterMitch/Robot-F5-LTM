@@ -4,7 +4,7 @@ Resource        common.resource
 Library         F5Rest.py  ${f5_primary}     ${user}     WITH NAME  primary
 Library         F5Rest.py  ${f5_secondary}   ${user}     WITH NAME  secondary
 Suite Setup     Setup lab
-Suite Teardown  Teardown lab
+#Suite Teardown  Teardown lab
 
 *** Variables ***
 ${primary_config_file}      f5_primary.tmsh
@@ -50,14 +50,14 @@ Setup Polatis
 
 Default configurations
     [Documentation]     Default the F5 configurations to factory default.
-    Log  Defaulting F5 Configurations!!! WARN
+    Log  Defaulting F5 Configurations!   WARN
     primary.tmsh load /sys config default
     Sleep   15
     secondary.tmsh load /sys config default
     Sleep   15
 
 Teardown Lab
-    [Documentation]     Default the configurations.
+    [Documentation]     Teardown lab.
     #primary.tmsh load /sys config default
     #secondary.tmsh load /sys config default
     No Operation
