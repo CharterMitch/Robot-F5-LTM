@@ -75,7 +75,7 @@ class F5Rest():
             # Return any errors in tmsh create/modify commands
             if 'create' in cmd or 'modify' in cmd or 'delete' in cmd \
                     and command.commandResult:
-                if 'already exists' in command.commandResult:
+                if 'already' in command.commandResult:
                     logger.warn(command.commandResult)
                 else:
                     raise AssertionError('Error in tmsh command: {}\n{}'

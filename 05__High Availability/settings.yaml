@@ -1,0 +1,3 @@
+primary_config_sync:    10.0.0.1
+secondary_config_sync:  10.0.0.2
+config_sync_mask:       255.255.255.252
