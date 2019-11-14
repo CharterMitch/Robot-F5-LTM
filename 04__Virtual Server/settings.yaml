@@ -11,8 +11,8 @@ node_1:                 '198.18.64.11'
 node_2:                 '198.18.64.12'
 
 # AFM Variables
-test_domain:            qa.com
-dns_server_1:           198.18.64.11
-dns_server_2:           198.18.64.12
-v6_dns_server_1:        2001:200::1300:0:0:0:100
-v6_dns_server_2:        2001:200::1300:0:0:0:101
+test_domain:            'qa.com'
+dns_server_1:           '198.18.64.11'
+dns_server_2:           '198.18.64.12'
+v6_dns_server_1:        '2001:200::1300:0:0:0:100'
+v6_dns_server_2:        '2001:200::1300:0:0:0:101'
