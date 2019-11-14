@@ -5,12 +5,6 @@ Variables       ../settings.yaml
 Library         String
 #Suite Setup     Start Ixia Test     fqdn_fw_ipv4.rxf
 
-*** Variables ***
-${dns_server_1}         198.18.64.11
-${dns_server_2}         198.18.64.12
-${v6_dns_server_1}      2001:200::1300:0:0:0:100
-${v6_dns_server_2}      2001:200::1300:0:0:0:101
-
 *** Keywords ***
 Build Ixia Chart
     [Documentation]     Gather IXIA test stats for the currently running test

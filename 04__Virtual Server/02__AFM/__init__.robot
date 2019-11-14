@@ -6,11 +6,6 @@ Variables       ../settings.yaml
 Suite Setup     Setup AFM
 Suite Teardown  Teardown
 
-*** Variables ***
-${test_domain}      qa.com
-${dns_server_1}     198.18.64.11
-${dns_server_2}     198.18.64.12
-
 *** Keywords ***
 Setup AFM
     [Documentation]     Setup nodes, pools and virtual servers to use
