@@ -5,7 +5,8 @@ Variables       ../settings.yaml
 Library         String
 
 *** Variables ***
-# These clients are configured in the IXIA test- they are used to validate the AFM rules.
+# These clients are configured in the IXIA test source.
+# They are used to validate the AFM rules.
 ${ixia_fqdntest1}       198.18.0.10
 ${ixia_fqdntest2}       198.18.0.11
 ${v6_ixia_fqdntest1}    2001:200:0:1100::11
@@ -36,7 +37,7 @@ Resolve V4 DNS Entries
     ${fqdntest1}=                   tmsh show security firewall fqdn-info fqdn fqdntest1.qa.com
     ${fqdntest2}=                   tmsh show security firewall fqdn-info fqdn fqdntest2.qa.com
     Should contain                  ${fqdntest1}    ${ixia_fqdntest1}
-    Should contain                  ${fqdntest1}    ${ixia_fqdntest2}
+    Should contain                  ${fqdntest2}    ${ixia_fqdntest2}
 
 Resolve V6 DNS Entries
     [Documentation]                 DNS entries can be loaded into the AFM module.
@@ -46,7 +47,7 @@ Resolve V6 DNS Entries
     ${fqdntest1}=                   tmsh show security firewall fqdn-info fqdn fqdntest1.qa.com
     ${fqdntest2}=                   tmsh show security firewall fqdn-info fqdn fqdntest2.qa.com
     Should contain                  ${fqdntest1}    ${v6_ixia_fqdntest1}
-    Should contain                  ${fqdntest1}    ${v6_ixia_fqdntest1}
+    Should contain                  ${fqdntest2}    ${v6_ixia_fqdntest1}
 
 Setup AFM for V6
     # Change dns resolver to V6
@@ -75,6 +76,7 @@ IPV4 FQDN Firewall
     # Verify allow and block counters are in the thousands of hits
     Should match regexp         ${allow}  enforced.+K
     Should match regexp         ${block}  enforced.+K
+    # TODO: Compare number of allowed vs number of blocked connections - they should be relatively equal.
     [Teardown]                  Stop Ixia Test
 
 IPV6 FQDN Firewall
@@ -95,4 +97,5 @@ IPV6 FQDN Firewall
     # Verify allow and block counters are in the thousands of hits
     Should match regexp         ${allow}  enforced.+K
     Should match regexp         ${block}  enforced.+K
+    # TODO: Compare number of allowed vs number of blocked connections - they should be relatively equal.
     #[Teardown]                  Stop Ixia Test
