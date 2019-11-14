@@ -14,6 +14,7 @@ Interface Load Balancing
     ...                 Port 2.1 and 2.2 should have equal bandwidth.
     [Setup]             Setup Test
     Sleep               120
+    Stop Ixia Test
     ${interfaces}=      bash tmsh show net interface all-properties \| sed -r "s\/[ ]+\/\|\/g" \| grep Uplink \| cut -d"\|" -f 5,6,20
     ${interface_1}=     Get Line    ${interfaces}   0
     ${interface_2}=     Get Line    ${interfaces}   1
@@ -22,12 +23,13 @@ Interface Load Balancing
 
 *** Keywords ***
 Setup Test
-    tmsh reset net interface
     tmsh create ltm virtual LACP-TEST destination ${network}:any mask ${mask} ip-forward
+    tmsh create ltm nat LACP-NAT { originating-address 198.18.64.0 traffic-group traffic-group-1 translation-address ${network} }
     imish -c 'enable','conf t','ip route ${cidr} null'
     Start Ixia Test     lacp.rxf
+    tmsh reset net interface
 
 Teardown Test
     tmsh delete ltm virtual LACP-TEST
+    tmsh delete ltm nat LACP-NAT
     imish -c 'enable','conf t','no ip route ${cidr} null'
-    Stop Ixia Test
