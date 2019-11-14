@@ -1,4 +1,6 @@
 *** Settings ***
+# This test included under virtual server testing as passing traffic
+# through the F5s often requires Virtual Servers in one way or another.
 Resource    ../../common.resource
 Library     ../../F5Rest.py  ${f5_primary}     ${user}
 Library     String
