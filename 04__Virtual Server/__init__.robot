@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation    Load Balancing method tests
+Documentation    Basic firewall tests for AFM functionality
 Resource        ../common.resource
 Variables       settings.yaml
 Library         ../F5Rest.py    ${f5_primary}     ${user}
