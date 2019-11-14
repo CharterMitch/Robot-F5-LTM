@@ -3,7 +3,13 @@ Resource        ../../common.resource
 Library         ../../F5Rest.py  ${f5_primary}     ${user}
 Variables       ../settings.yaml
 Library         String
-#Suite Setup     Start Ixia Test     fqdn_fw_ipv4.rxf
+
+*** Variables ***
+# These clients are configured in the IXIA test- they are used to validate the AFM rules.
+${ixia_fqdntest1}       198.18.0.10
+${ixia_fqdntest2}       198.18.0.11
+${v6_ixia_fqdntest1}    2001:200:0:1100::11
+${v6_ixia_fqdntest2}    2001:200:0:1100::12
 
 *** Keywords ***
 Build Ixia Chart
@@ -29,8 +35,8 @@ Resolve V4 DNS Entries
     Wait until keyword succeeds     1 min       5 sec           DNS Entry Exists    fqdntest2.qa.com
     ${fqdntest1}=                   tmsh show security firewall fqdn-info fqdn fqdntest1.qa.com
     ${fqdntest2}=                   tmsh show security firewall fqdn-info fqdn fqdntest2.qa.com
-    Should contain                  ${fqdntest1}    ${dns_server_1}
-    Should contain                  ${fqdntest1}    ${dns_server_2}
+    Should contain                  ${fqdntest1}    ${ixia_fqdntest1}
+    Should contain                  ${fqdntest1}    ${ixia_fqdntest2}
 
 Resolve V6 DNS Entries
     [Documentation]                 DNS entries can be loaded into the AFM module.
@@ -39,8 +45,8 @@ Resolve V6 DNS Entries
     Wait until keyword succeeds     1 min       5 sec           DNS Entry Exists    fqdntest2.qa.com
     ${fqdntest1}=                   tmsh show security firewall fqdn-info fqdn fqdntest1.qa.com
     ${fqdntest2}=                   tmsh show security firewall fqdn-info fqdn fqdntest2.qa.com
-    Should contain                  ${fqdntest1}    ${v6_dns_server_1}
-    Should contain                  ${fqdntest1}    ${v6_dns_server_2}
+    Should contain                  ${fqdntest1}    ${v6_ixia_fqdntest1}
+    Should contain                  ${fqdntest1}    ${v6_ixia_fqdntest1}
 
 Setup AFM for V6
     # Change dns resolver to V6
