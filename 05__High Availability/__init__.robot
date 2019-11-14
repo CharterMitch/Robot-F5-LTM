@@ -10,7 +10,7 @@ Suite Teardown  Teardown
 *** Keywords ***
 Configure F5
     [Documentation]     Setup the F5 for HA testing.
-    [tags]  Setup
+    [tags]              Setup
     primary.tmsh modify /cm device bigip1 configsync-ip ${primary_config_sync}
     primary.tmsh modify /cm device bigip1 unicast-address {{ ip ${primary_config_sync} }}
     secondary.tmsh modify /cm device ${f5_secondary}[name] configsync-ip ${secondary_config_sync}
@@ -24,5 +24,6 @@ Configure F5
 
 Teardown
     [Documentation]     Teardown the configuration for this test suite.
-    [tags]  Teardown
+    [tags]              Teardown
+    # Is there a reason to teardown the HA config?
     No Operation
