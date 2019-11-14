@@ -34,7 +34,7 @@ Resolve DNS Entries
 IPV4 FQDN Firewall
     [Documentation]             Connections to virtual servers are blocked or allowed
     ...                         using FQDN entries.
-    Sleep                       60
+    Sleep                       180
     ${rule_stat}                tmsh show security firewall rule-stat
     ${virtual_server}           Get Lines Matching regexp    ${rule_stat}   virtual +${virtual_server}  partial_match=true
     ${allow}                    Get Lines Containing String  ${virtual_server}   allow
@@ -49,5 +49,3 @@ IPV4 FQDN Firewall
     #${chart}=               Build Ixia Chart
     #Log                     ${chart}    HTML
     #[Teardown]              Stop Ixia Test
-
-

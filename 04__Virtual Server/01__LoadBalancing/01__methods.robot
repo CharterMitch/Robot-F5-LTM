@@ -14,7 +14,7 @@ Build Ixia Chart
 
 Reset Statistics
     [Documentation]     Reset various statistics on the F5.
-    ${test} =   tmsh reset-stats ltm virtual
+    ${test}=            tmsh reset-stats ltm virtual
     tmsh reset-stats ltm pool
     tmsh reset-stats ltm profile client-ssl clientssl
 
