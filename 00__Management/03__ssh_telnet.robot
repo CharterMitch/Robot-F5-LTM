@@ -13,6 +13,7 @@ Telnet Connection Fails
 SSH Connection
     [Documentation]     SSH connection is established.
     sshlibrary.open connection     ${f5_primary}[host]
+    sshlibrary.login    ${user}[username]   ${user}[password]
     [Teardown]          sshlibrary.close all connections
 
 SSH ACL
