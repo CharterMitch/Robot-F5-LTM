@@ -12,7 +12,7 @@ configure_polatis: False
 
 # Primary F5
 f5_primary:
-  host: 10.240.72.161
+  host: 10.240.72.162
   name: robot-f501.charterlab.com
 
 # Secondary F5

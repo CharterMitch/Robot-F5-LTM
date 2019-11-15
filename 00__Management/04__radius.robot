@@ -39,8 +39,9 @@ SSH to F5
 
 Configure Radius
     [Documentation]     Add radius servers and roles to the F5s.
-    tmsh create auth radius-server RADIUS-ISE1 secret l1v3l0ng server 66.189.243.4
-    tmsh create auth radius-server RADIUS-ISE2 secret l1v3l0ng server 66.189.243.5
+    tmsh create auth radius-server system_auth_name1 secret l1v3l0ng server 66.189.243.4
+    tmsh create auth radius-server system_auth_name2 secret l1v3l0ng server 66.189.243.5
+    tmsh create auth radius system-auth { servers replace-all-with { system_auth_name1 system_auth_name2 } service-type administrative }
     tmsh modify auth remote-role role-info add { admin_group { attribute F5-LTM-User-Role=Administrator console tmsh line-order 1001 role administrator user-partition All } }
     tmsh modify auth remote-role role-info add { audit_group { attribute F5-LTM-User-Role=Auditor console tmsh line-order 1002 role auditor user-partition All } }
     tmsh modify auth source { type radius }
@@ -48,8 +49,10 @@ Configure Radius
 
 Unconfigure Radius
     [Documentation]     Remove radius configuration.
-    tmsh delete auth radius-server RADIUS-ISE1
-    tmsh delete auth radius-server RADIUS-ISE2
+    tmsh modify auth source { type local }
+    tmsh delete auth radius system-auth
     tmsh modify auth remote-role role-info delete {admin_group}
     tmsh modify auth remote-role role-info delete {audit_group}
+    tmsh delete auth radius-server system_auth_name1
+    tmsh delete auth radius-server system_auth_name2
     tmsh delete sys management-route radius

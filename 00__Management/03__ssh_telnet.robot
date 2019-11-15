@@ -1,6 +1,6 @@
 *** Settings ***
 Resource        ../common.resource
-Library         ../F5Rest.py  ${f5_primary}     ${user}
+Library         ../F5Rest.py    ${f5_primary}     ${user}
 Library         Dialogs
 Library         SSHLibrary
 Library         Telnet

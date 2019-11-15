@@ -3,11 +3,11 @@ Documentation    Setup virtual servers, nodes and pool for F5 testing.
 Resource        ../common.resource
 Variables       settings.yaml
 Library         ../F5Rest.py    ${f5_primary}     ${user}
-Suite Setup     Configure F5
+Suite Setup     Configure Virtual Servers
 Suite Teardown  Teardown
 
 *** Keywords ***
-Configure F5
+Configure Virtual Servers
     [Documentation]     Setup nodes, pools and virtual servers to use
     ...                 in Load Balancing test cases.
     ...                 Variables are from the settings.yaml file in this folder.
