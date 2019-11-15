@@ -14,6 +14,5 @@ NTP Polling
     ...                     the server was successfully reached during each of 
     ...                     the last eight attempts.
     ...                     https://support.f5.com/csp/article/K10240
-    #Sleep                   60
     ${ntp}=                 bash ntpq -np
     Should Match Regexp     ${ntp}    377

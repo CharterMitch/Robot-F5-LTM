@@ -1,10 +1,10 @@
 *** Settings ***
-Resource        ../common.resource
-Library         ../F5Rest.py  ${f5_primary}     ${user}
-Library         Dialogs
-Library         SSHLibrary
-Suite Setup     Configure Radius
-Suite Teardown  Unconfigure Radius
+Resource                ../common.resource
+Library                 ../F5Rest.py  ${f5_primary}     ${user}
+Library                 Dialogs
+Library                 SSHLibrary
+Suite Setup             Configure Radius
+Suite Teardown          Unconfigure Radius
 
 *** Variables ***
 ${root_password}        default

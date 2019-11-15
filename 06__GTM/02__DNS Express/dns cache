@@ -1,0 +1,16 @@
+ltm dns cache transparent /Common/nonpay-com.wg.charter.com {
+    answer-default-zones yes
+    local-zones {
+        {
+            name nonpay-com.wg.charter.com
+            records { "nonpay-com.wg.charter.com. 5 IN A 71.10.216.9" "nonpay-com.wg.charter.com. 5 IN AAAA 2607:f428:ffff:ffff::9" }
+            type static
+        }
+    }
+    response-policy-zones {
+        /Common/denyall.rpz.charter.com {
+            action nxdomain
+            logs-and-stats-only yes
+        }
+    }
+}

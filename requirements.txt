@@ -1,9 +1,8 @@
 f5-sdk
 robot-framework
-prettytable
 requests
 pysnmp
 retry
-mpld3
 matplotlib
 numpy
+mpld3

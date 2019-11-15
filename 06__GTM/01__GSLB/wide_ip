@@ -1,0 +1,44 @@
+*** Test Cases ***
+Global Availability
+
+Ratio
+
+Round Robin
+
+Topology
+
+Region East, West, Etc.
+gtm region /Common/EasternUS {
+    region-members {
+        state "US/New Hampshire" { }
+        state "US/New Jersey" { }
+        state "US/New York" { }
+        state "US/North Carolina" { }
+        state "US/Rhode Island" { }
+        state "US/South Carolina" { }
+        state "US/West Virginia" { }
+        state US/Alabama { }
+        state US/Connecticut { }
+        state US/Delaware { }
+        state US/Florida { }
+        state US/Georgia { }
+        state US/Illinois { }
+        state US/Indiana { }
+        state US/Kentucky { }
+        state US/Louisiana { }
+        state US/Maine { }
+        state US/Maryland { }
+        state US/Massachusetts { }
+        state US/Michigan { }
+        state US/Minnesota { }
+        state US/Mississippi { }
+        state US/Ohio { }
+        state US/Pennsylvania { }
+        state US/Tennessee { }
+        state US/Vermont { }
+        state US/Virginia { }
+        state US/Wisconsin { }
+    }
+}
+
+persistence

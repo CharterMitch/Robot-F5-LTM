@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation    GTM testing

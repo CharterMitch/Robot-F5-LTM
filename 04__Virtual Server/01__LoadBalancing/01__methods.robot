@@ -72,3 +72,7 @@ Member Ratio
     Log     Member ratio connection difference is ${diff}
     Log F5 Pool Data        ${pool}     ${virtual_server}
     [Teardown]              Stop Ixia Test
+
+Least Connections Node
+    [Documentation]         This method is used in production.
+    No Operation
