@@ -137,7 +137,7 @@ class IxLoadRobot:
     @keyword("IXLoad Chart ${stats} ${stats_wanted}")
     def create_html_chart(self, stats, stats_wanted):
         ''' Create an HTML chart from IXLoad stats gathered from the
-            gather_stats command.
+            gather_stats command / IXIA API.
 
             A list of available stats for your test can be found in the API:
             /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
@@ -149,12 +149,11 @@ class IxLoadRobot:
             Log         ${chart}
         '''
         import mpld3
-        from mpld3 import plugins
-        from mpld3.utils import get_id
         import numpy as np
         import matplotlib.pyplot as plt
+        # Dict keys from IXIA stats api are in miliseconds from start of test
         x = np.array(list(stats.keys()), dtype=int)
-        # Convert array from ms to seconds
+        # Convert ixia data array from ms to seconds
         x = x / 1000
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
