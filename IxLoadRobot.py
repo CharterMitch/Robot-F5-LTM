@@ -148,23 +148,29 @@ class IxLoadRobot:
             ${chart}=   IXLoad Chart ${stats} @list
             Log         ${chart}
         '''
+        import pandas
         import mpld3
-        import numpy as np
         import matplotlib.pyplot as plt
-        # Dict keys from IXIA stats api are in miliseconds from start of test
-        x = np.array(list(stats.keys()), dtype=int)
-        # Convert ixia data array from ms to seconds
-        x = x / 1000
+        df = pandas.DataFrame.from_dict(r.json(), orient='index')
+        # Log statistics as an HTML chart
+        logger.info(df.to_html(), html=True)
+        # Convert index from miliseconds to seconds (from test start)
+        x = df.index.astype(int).to_numpy() / 1000
+        # Create a base matplot figure
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         for name in stats_wanted:
             try:
-                y = np.array([value[name] for value in list(stats.values())])
-                ax.plot(x, y.T, lw=1, alpha=0.8, label=name)
+                # Add a new line chart to the graph
+                y = list(df[name])
+                ax.plot(x, y, lw=1, alpha=0.8, label=name)
             except KeyError:
                 pass
+        # Add the label to bottom of graph
         ax.set_xlabel('Time (s)')
+        # Display the legend
         ax.legend()
+        # Return graph as HTML (so we can log it to robot)
         return mpld3.fig_to_html(fig)
 
     @retry(tries=5, delay=5)

@@ -8,7 +8,7 @@ send_base_config: False
 send_imish_config: False
 
 # Configure the Polatis cross-connects
-configure_polatis: False
+configure_polatis: True
 
 # Primary F5
 f5_primary:

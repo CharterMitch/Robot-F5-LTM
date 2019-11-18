@@ -18,7 +18,7 @@ Setup lab
     Run Keyword If  '${default_config}'=='True'     Default configurations
     Run Keyword If  '${send_base_config}'=='True'   Load Base Config
     Run Keyword If  '${send_imish_config}'=='True'  Load imish Config
-    #Setup Polatis
+    Run Keyword If  '${configure_polatis}'=='True'  Setup Polatis
 
 Load Base Config
     [Documentation]     Configure the F5 physical devices, links, ip addresses.
@@ -52,9 +52,8 @@ Default Configurations
     [Documentation]     Default the F5 configurations to factory default.
     Log  Defaulting F5 Configurations!   WARN
     primary.tmsh load /sys config default
-    Sleep   15
     secondary.tmsh load /sys config default
-    Sleep   15
+    Sleep   120
 
 Teardown Lab
     [Documentation]     Teardown lab.

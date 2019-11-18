@@ -37,4 +37,4 @@ tmsh create sys management-ip 10.240.72.162/22 { }
 tmsh create sys management-route default { gateway 10.240.72.1 network default }
 tmsh modify sys ntp servers replace-all-with { 10.240.72.125 } timezone America/Denver
 tmsh modify sys state-mirroring { addr 10.0.0.1 secondary-addr 198.18.96.5 }
-tmsh sys management-route default { gateway 10.240.72.1 network default }
+tmsh create sys management-route default { gateway 10.240.72.1 network default }
