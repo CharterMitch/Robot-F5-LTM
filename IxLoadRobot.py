@@ -151,7 +151,7 @@ class IxLoadRobot:
         import pandas
         import mpld3
         import matplotlib.pyplot as plt
-        df = pandas.DataFrame.from_dict(r.json(), orient='index')
+        df = pandas.DataFrame.from_dict(stats, orient='index')
         # Log statistics as an HTML chart
         logger.info(df.to_html(), html=True)
         # Convert index from miliseconds to seconds (from test start)
