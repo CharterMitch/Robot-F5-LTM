@@ -22,7 +22,7 @@ Root login
 Auditor role
     [Documentation]         Test auditor login and that the proper role is assigned.
     #${password}             Get value from user     f5dnaRO password:    password
-    SSH to F5               ${f5_secondary}[host]   f5dnaRO   ${audit_password}
+    SSH to F5               ${f5_primary}[host]   f5dnaRO   ${audit_password}
     ${output}=              Execute Command     show auth user field-fmt
     Should match regexp     ${output}   role auditor
     ${create_rc}=           Execute Command     ltm create node test address 1.1.1.1    return_stdout=False     return_rc=True

@@ -3,9 +3,15 @@ Resource        ../common.resource
 Library         ../F5Rest.py  ${f5_primary}     ${user}
 Suite Setup     tmsh modify sys ntp servers replace-all-with { 10.240.72.125 } timezone America/Denver
 
+*** Variables ***
+${ntp_server}       10.240.72.125
+
 *** Test Cases ***
 NTP Daemon is Running
     [Documentation]         NTP daemon is running.
+    [Setup]                 tmsh modify sys ntp servers replace-all-with { ${ntp_server} } timezone America/Denver
+    # How long does NTP take to query?
+    # Sleep X
     ${ntpd}=                tmsh show /sys service ntpd
     Should Match Regexp     ${ntpd}     running...
 

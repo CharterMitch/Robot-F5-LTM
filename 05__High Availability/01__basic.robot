@@ -14,7 +14,7 @@ Secondary device is Standby
 
 Manual failover
     [Setup]                 primary.tmsh run /sys failover standby
-    Sleep                   10
+    Sleep                   5
     ${primary}=             primary.tmsh show /cm failover-status
     Should match regexp     ${primary}      STANDBY
     ${secondary}=           secondary.tmsh show /cm failover-status
