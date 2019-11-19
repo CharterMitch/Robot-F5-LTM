@@ -158,13 +158,12 @@ class IxLoadRobot:
             dtype='int64',
             orient='index',
             )
-        # df.index = df.index.astype(int)
-        # df = df.sort_index()
         # Log statistics as an HTML table
         logger.info(df.to_html(), html=True)
         # Build a chart
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
+        # Only chart the stats requested
         df[stats_wanted].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
         # Return chart as HTML
