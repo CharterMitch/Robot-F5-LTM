@@ -132,6 +132,8 @@ class IxLoadRobot:
             _dict.update(self.s.get(stats_url).json())
             time.sleep(4)
             r = self.s.get(test_url)
+        # Convert index to integer from strings
+        _dict = {int(k): v for k, v in _dict.items()}
         return _dict
 
     @keyword("IXLoad Chart ${stats} ${stats_wanted}")
@@ -155,16 +157,15 @@ class IxLoadRobot:
             stats,
             dtype='int64',
             orient='index',
-            columns=stats_wanted
             )
-        df.index = df.index.astype(int)
-        df = df.sort_index()
+        # df.index = df.index.astype(int)
+        # df = df.sort_index()
         # Log statistics as an HTML table
         logger.info(df.to_html(), html=True)
         # Build a chart
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
-        df.plot.line(ax=ax, legend=True)
+        df[stats_wanted].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (ms)')
         # Return chart as HTML
         return mpld3.fig_to_html(fig)
