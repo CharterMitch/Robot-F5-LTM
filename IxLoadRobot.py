@@ -148,13 +148,15 @@ class IxLoadRobot:
     @keyword("HTML Chart")
     def create_html_chart(self, df, cols):
         ''' Create an HTML chart from a Pandas dataframe
-            and a list of columns in the dataframe to chart.
+            and a list of columns from the dataframe.
 
             The dataframe is expected to be built from the
             gather_stats command and contain data from the IXLoad API.
 
             A list of available stats for your test can be found in the API:
             /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
+
+            Or you can uncomment the df.to_html() to see all of the stats.
 
             Example robot use:
             ${stats}=     Gather IXLoad Stats
@@ -164,15 +166,14 @@ class IxLoadRobot:
         '''
         import mpld3
         import matplotlib.pyplot as plt
-        # Log dataframe as an HTML table (easy way to see available stats)
-        # Easy way to see all of the stats available
+        # Log dataframe as an HTML table (easy way to see all available stats)
         # logger.info(df.to_html(), html=True)
-        # Build matplotlib chart
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         # Only chart the columns requested
         df[cols].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
+        # Log chart as HTML output
         logger.info(mpld3.fig_to_html(fig), html=True)
 
     @retry(tries=5, delay=5)
