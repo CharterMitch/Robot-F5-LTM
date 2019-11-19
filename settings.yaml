@@ -5,10 +5,10 @@ default_config: False
 send_base_config: False
 
 # Send imish/bgp configuration commands for ZebOS
-send_imish_config: False
+send_imish_config: True
 
 # Configure the Polatis cross-connects
-configure_polatis: True
+configure_polatis: False
 
 # Primary F5
 f5_primary:
