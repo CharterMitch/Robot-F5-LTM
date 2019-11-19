@@ -35,8 +35,8 @@ Round Robin
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    # IXIA stats should not contain any failed HTTP requests
-    Should be true          ${df['HTTP Requests Failed'].max()}==0
+    # Allow for some failures but should be less than 1000 (IXIA may fail connections during shutdown)
+    Should be true          ${df['HTTP Requests Failed'].sum()}==0
     &{stats}=               Get stats for pool ${pool}
     # Total connections for each pool member
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
@@ -60,8 +60,7 @@ Member Ratio
     ${df}                   IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML chart              ${df}   ${cols}
-    # IXIA stats/dataframe should not contain any failed HTTP requests
-    Should be true          ${df['HTTP Requests Failed'].max()}==0
+    Should be true          ${df['HTTP Requests Failed'].sum()}==0
     &{stats}=               Get stats for pool ${pool}
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     Should be true          ${pool_member_1}>0

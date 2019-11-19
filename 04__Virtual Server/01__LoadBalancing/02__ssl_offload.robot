@@ -29,10 +29,9 @@ V4 SSL Offload
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    # IXIA stats should not contain any failed HTTP requests
-    Should be true          ${df['HTTP Requests Failed'].max()}==0
+    Should be true          ${df['HTTP Requests Failed'].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
-    # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
+    # TLS 1.2 connections should be in the thousands or millions
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
     [Teardown]              Run Keywords    Stop Ixia Test
     ...                     AND             Log F5 Pool Data    ${pool}     ${virtual_server}
@@ -46,10 +45,9 @@ V6 SSL Offload
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    # IXIA stats should not contain any failed HTTP requests
-    Should be true          ${df['HTTP Requests Failed'].max()}==0
+    Should be true          ${df['HTTP Requests Failed'].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
-    # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
+    # TLS 1.2 connections should be in the thousands or millions
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
     [Teardown]              Run Keywords    Stop Ixia Test
     ...                     AND             Log F5 Pool Data    ${pool}     ${virtual_server}
