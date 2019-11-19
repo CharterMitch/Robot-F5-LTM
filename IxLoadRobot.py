@@ -132,8 +132,8 @@ class IxLoadRobot:
             _dict.update(self.s.get(stats_url).json())
             time.sleep(4)
             r = self.s.get(test_url)
-        # Convert index to integer from strings
-        _dict = {int(k): v for k, v in _dict.items()}
+        # Convert index to integer from string, then convert to seconds from ms
+        _dict = {int(k)/1000: v for k, v in _dict.items()}
         return _dict
 
     @keyword("IXLoad Chart ${stats} ${stats_wanted}")
@@ -166,7 +166,7 @@ class IxLoadRobot:
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         df[stats_wanted].plot.line(ax=ax, legend=True)
-        ax.set_xlabel('Time (ms)')
+        ax.set_xlabel('Time (s)')
         # Return chart as HTML
         return mpld3.fig_to_html(fig)
 
