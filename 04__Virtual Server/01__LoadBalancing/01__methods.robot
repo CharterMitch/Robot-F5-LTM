@@ -4,14 +4,12 @@ Library     ../../F5Rest.py  ${f5_primary}     ${user}
 Variables   ../settings.yaml
 
 *** Keywords ***
-Build Ixia Chart
+IXIA Stats as Pandas df
     [Documentation]     Gather IXIA test stats for the currently running test
-    ...                 then return an HTML graph.
+    ...                 then return the data as a pandas dataframe (df).
     ${stats}=           Gather IXLoad Stats
-    @{cols}=            Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     ${df}=              Convert to dataframe ${stats}
-    ${chart}=           IXLoad Chart ${df} ${cols}
-    [Return]            ${chart}
+    [Return]            ${df}
 
 Reset Statistics
     [Documentation]     Reset various statistics on the F5.
@@ -34,9 +32,10 @@ Round Robin
     [Setup]                 Run Keywords    Start Ixia Test     v4_http.rxf
     ...                     AND             tmsh reset-stats ltm pool
     ...                     AND             tmsh modify ltm pool ${pool} load-balancing-mode round-robin
-    ${chart}    ${df}       Build Ixia Chart
-    Log                     ${chart}    HTML
-    # IXIA stats should not contain any failed HTTP requests
+    ${df}=                  IXIA Stats as Pandas df
+    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    HTML Chart              ${df}   ${cols}
+    # IXIA stats/dataframe should not contain any failed HTTP requests
     Should be true          ${df['HTTP Requests Failed'].max()}==0
     &{stats}=               Get stats for pool ${pool}
     # Total connections for each pool member
@@ -58,9 +57,10 @@ Member Ratio
     ...                     AND     tmsh modify ltm pool ${pool} load-balancing-mode ratio-member
     ...                     AND     tmsh modify ltm pool http_test_pool {members modify {${node_1}:http { ratio 10 }}}
     ...                     AND     tmsh reset-stats ltm pool
-    ${chart}    ${df}       Build Ixia Chart
-    Log                     ${chart}    HTML
-    # IXIA stats should not contain any failed HTTP requests
+    ${df}                   IXIA Stats as Pandas df
+    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    HTML chart              ${df}   ${cols}
+    # IXIA stats/dataframe should not contain any failed HTTP requests
     Should be true          ${df['HTTP Requests Failed'].max()}==0
     &{stats}=               Get stats for pool ${pool}
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}

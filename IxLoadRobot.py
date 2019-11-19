@@ -145,34 +145,35 @@ class IxLoadRobot:
             orient='index',
             )
 
-    @keyword("IXLoad Chart ${df} ${cols}")
+    @keyword("HTML Chart")
     def create_html_chart(self, df, cols):
-        ''' Create an HTML chart from a Pandas dataframe.
+        ''' Create an HTML chart from a Pandas dataframe
+            and a list of columns in the dataframe to chart.
 
             The dataframe is expected to be built from the
-            gather_stats command / IXIA API.
+            gather_stats command and contain data from the IXLoad API.
 
             A list of available stats for your test can be found in the API:
             /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
 
             Example robot use:
-            ${stats}=       Gather IXLoad Stats
-            @{columns}=     Create List   HTTP Concurrent Connections ...
-            ${chart}=       IXLoad Chart ${df} ${cols}
-            Log             ${chart}
+            ${stats}=     Gather IXLoad Stats
+            ${df}=        Convert to dataframe ${stats}
+            @{cols}=      Create List     HTTP Concurrent Connections ...
+            HTML chart    ${df}   ${cols}
         '''
         import mpld3
         import matplotlib.pyplot as plt
-        # Log statistics as an HTML table
-        logger.info(df.to_html(), html=True)
-        # Build a chart
+        # Log dataframe as an HTML table (easy way to see available stats)
+        # Easy way to see all of the stats available
+        # logger.info(df.to_html(), html=True)
+        # Build matplotlib chart
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         # Only chart the columns requested
         df[cols].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
-        # Return chart as HTML
-        return mpld3.fig_to_html(fig)
+        logger.info(mpld3.fig_to_html(fig), html=True)
 
     @retry(tries=5, delay=5)
     def _test_operation(self, operation, data={}):
