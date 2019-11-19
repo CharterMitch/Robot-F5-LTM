@@ -156,7 +156,10 @@ class IxLoadRobot:
             A list of available stats for your test can be found in the API:
             /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
 
-            Or you can uncomment the df.to_html() to see all of the stats.
+            You can uncomment the df.to_html() to see all of the stats.
+            Or in a test case to create a table from the dataframe:
+            ${html}=    Call Method     ${df}   to_html
+            Log         ${html}     html=True
 
             Example robot use:
             ${stats}=     Gather IXLoad Stats

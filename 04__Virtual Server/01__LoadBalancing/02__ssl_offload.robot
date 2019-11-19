@@ -4,19 +4,12 @@ Library     ../../F5Rest.py    ${f5_primary}   ${user}
 Variables   ../settings.yaml
 
 *** Keywords ***
-Build Ixia Chart
+IXIA Stats as Pandas df
     [Documentation]     Gather IXIA test stats for the currently running test
-    ...                 then return an HTML graph.
+    ...                 then return the data as a pandas dataframe (df).
     ${stats}=           Gather IXLoad Stats
-    @{graph}=           Create List      HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
-    ${chart}=           IXLoad Chart ${stats} ${graph}
-    [Return]            ${chart}
-
-Reset Statistics
-    [Documentation]     Reset various statistics on the F5.
-    ${test}=            tmsh reset-stats ltm virtual
-    tmsh reset-stats ltm pool
-    tmsh reset-stats ltm profile client-ssl clientssl
+    ${df}=              Convert to dataframe ${stats}
+    [Return]            ${df}
 
 Log F5 Pool Data
     [Documentation]     Log virtual server, pool, member and profile statistics.
@@ -29,10 +22,15 @@ Log F5 Pool Data
 *** Test Cases ***
 V4 SSL Offload
     [Documentation]         SSL Offload V4 HTTP Traffic
-    [Setup]                 Start Ixia Test     v4_https.rxf
-    Reset Statistics
-    ${chart}=               Build Ixia Chart
-    Log                     ${chart}    HTML
+    [Setup]                 Run Keywords    Start Ixia Test     v4_https.rxf
+    ...                     AND             tmsh reset-stats ltm virtual
+    ...                     AND             tmsh reset-stats ltm pool
+    ...                     AND             tmsh reset-stats ltm profile client-ssl clientssl   
+    ${df}=                  IXIA Stats as Pandas df
+    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    HTML Chart              ${df}   ${cols}
+    # IXIA stats should not contain any failed HTTP requests
+    Should be true          ${df['HTTP Requests Failed'].max()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
@@ -41,10 +39,15 @@ V4 SSL Offload
 
 V6 SSL Offload
     [Documentation]         SSL Offload V6 HTTP Traffic
-    [Setup]                 Start Ixia Test     v6_https.rxf          
-    Reset Statistics
-    ${chart}=               Build Ixia Chart
-    Log                     ${chart}    HTML
+    [Setup]                 Run Keywords    Start Ixia Test     v6_https.rxf
+    ...                     AND             tmsh reset-stats ltm virtual
+    ...                     AND             tmsh reset-stats ltm pool
+    ...                     AND             tmsh reset-stats ltm profile client-ssl clientssl                   
+    ${df}=                  IXIA Stats as Pandas df
+    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    HTML Chart              ${df}   ${cols}
+    # IXIA stats should not contain any failed HTTP requests
+    Should be true          ${df['HTTP Requests Failed'].max()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
