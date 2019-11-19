@@ -34,8 +34,8 @@ V4 SSL Offload
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
-    Log F5 Pool Data        ${pool}     ${virtual_server}
-    [Teardown]              Stop Ixia Test
+    [Teardown]              Run Keywords    Stop Ixia Test
+    ...                     AND             Log F5 Pool Data    ${pool}     ${virtual_server}
 
 V6 SSL Offload
     [Documentation]         SSL Offload V6 HTTP Traffic
@@ -51,5 +51,5 @@ V6 SSL Offload
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands. Example: Version 1.2   12K
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
-    Log F5 Pool Data        ${pool}     ${virtual_server}
-    [Teardown]              Stop Ixia Test 
+    [Teardown]              Run Keywords    Stop Ixia Test
+    ...                     AND             Log F5 Pool Data    ${pool}     ${virtual_server}

@@ -138,6 +138,13 @@ class IxLoadRobot:
 
     @keyword('Convert to dataframe ${data}')
     def convert_to_dataframe(self, data):
+        ''' Take a stats dictionary and convert it to a pandas
+            dataframe.
+
+            You can also logs the dataframe as an HTML table:
+            ${html}=    Call Method     ${df}   to_html
+            Log         ${html}     html=True
+        '''
         import pandas
         return pandas.DataFrame.from_dict(
             data,
@@ -156,11 +163,6 @@ class IxLoadRobot:
             A list of available stats for your test can be found in the API:
             /api/v0/sessions/<session>/ixload/stats/HTTPClient/availableStats
 
-            You can uncomment the df.to_html() to see all of the stats.
-            Or in a test case to create a table from the dataframe:
-            ${html}=    Call Method     ${df}   to_html
-            Log         ${html}     html=True
-
             Example robot use:
             ${stats}=     Gather IXLoad Stats
             ${df}=        Convert to dataframe ${stats}
@@ -169,14 +171,11 @@ class IxLoadRobot:
         '''
         import mpld3
         import matplotlib.pyplot as plt
-        # Log dataframe as an HTML table (easy way to see all available stats)
-        # logger.info(df.to_html(), html=True)
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         # Only chart the columns requested
         df[cols].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
-        # Log chart as HTML output
         logger.info(mpld3.fig_to_html(fig), html=True)
 
     @retry(tries=5, delay=5)
