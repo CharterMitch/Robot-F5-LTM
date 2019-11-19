@@ -115,7 +115,7 @@ class IxLoadRobot:
         logger.info("Stopping IXIA Test ...")
         url = urljoin(self.url, 'ixload/test/activeTest')
         r = self.s.get(url)
-        if r.json()['currentState'] == 'Running':
+        if r.json().get('currentState') == 'Running':
             self._test_operation('gracefulStopRun')
 
     @keyword("Gather IXLoad Stats")
@@ -136,9 +136,20 @@ class IxLoadRobot:
         _dict = {int(k)/1000: v for k, v in _dict.items()}
         return _dict
 
-    @keyword("IXLoad Chart ${stats} ${stats_wanted}")
-    def create_html_chart(self, stats, stats_wanted):
-        ''' Create an HTML chart from IXLoad stats gathered from the
+    @keyword('Convert to dataframe ${data}')
+    def convert_to_dataframe(self, data):
+        import pandas
+        return pandas.DataFrame.from_dict(
+            data,
+            dtype='int64',
+            orient='index',
+            )
+
+    @keyword("IXLoad Chart ${df} ${cols}")
+    def create_html_chart(self, df, cols):
+        ''' Create an HTML chart from a Pandas dataframe.
+
+            The dataframe is expected to be built from the
             gather_stats command / IXIA API.
 
             A list of available stats for your test can be found in the API:
@@ -147,24 +158,18 @@ class IxLoadRobot:
             Example robot use:
             ${stats}=       Gather IXLoad Stats
             @{columns}=     Create List   HTTP Concurrent Connections ...
-            ${chart}=       IXLoad Chart ${stats} ${columns}
+            ${chart}=       IXLoad Chart ${df} ${cols}
             Log             ${chart}
         '''
-        import pandas
         import mpld3
         import matplotlib.pyplot as plt
-        df = pandas.DataFrame.from_dict(
-            stats,
-            dtype='int64',
-            orient='index',
-            )
         # Log statistics as an HTML table
         logger.info(df.to_html(), html=True)
         # Build a chart
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
-        # Only chart the stats requested
-        df[stats_wanted].plot.line(ax=ax, legend=True)
+        # Only chart the columns requested
+        df[cols].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
         # Return chart as HTML
         return mpld3.fig_to_html(fig)
