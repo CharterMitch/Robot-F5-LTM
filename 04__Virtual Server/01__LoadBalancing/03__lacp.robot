@@ -17,10 +17,13 @@ Interface Load Balancing
     [Setup]             Setup Test
     Sleep               120
     Stop Ixia Test
-    ${interfaces}=      bash tmsh show net interface all-properties \| sed -r "s\/[ ]+\/\|\/g" \| grep Uplink \| cut -d"\|" -f 5,6,20
-    ${interface_1}=     Get Line    ${interfaces}   0
-    ${interface_2}=     Get Line    ${interfaces}   1
-    Should be Equal     ${interface_1}      ${interface_2}
+    ${interface_1}=     Get interface stats 2.1
+    ${interface_2}=     Get interface stats 2.2
+    ${diff_in}=         Percentage difference ${interface_1['counters_pktsIn']} ${interface_2['counters_pktsIn']}
+    ${diff_out}=        Percentage difference ${interface_1['counters_pktsOut']} ${interface_2['counters_pktsOut']}
+    # Allow 5% difference between interfaces
+    Should be true      ${diff_in}<5
+    Should be true      ${diff_out}<5
     [Teardown]          Teardown Test
 
 *** Keywords ***

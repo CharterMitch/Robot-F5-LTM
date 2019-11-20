@@ -26,9 +26,10 @@ class F5Rest():
             self.mgmt = ManagementRoot(
                 hostname,
                 user['username'],
-                user['password']
+                user['password'],
+                timeout=5
                 )
-        except:
+        except TimeoutError:
             AssertionError("Unable to connect to F5 REST API. \
                             Check settings.yaml.")
 
@@ -199,6 +200,27 @@ class F5Rest():
         # Return { node: node_stats_dict } to Robot Keyword
         logger.info(stats)
         return stats
+
+    @keyword('Get interface stats ${interface}')
+    def interface_stats(self, interface):
+        ''' Load interface statistics given an interface name.
+
+            Example: interface_stats('2.1')
+            Return dictionary:
+            {'counters_bitsIn': {'value': 41830832},
+            'counters_bitsOut': {'value': 9579368},
+            'counters_dropsAll': {'value': 7483},
+            'counters_errorsAll': {'value': 0},
+            'counters_pktsIn': {'value': 60724},
+            'counters_pktsOut': {'value': 13908},
+            'mediaActive': {'description': '10000LR-FD'},
+            'tmName': {'description': '2.1'},
+            'status': {'description': 'up'}}
+        '''
+        interface = self.mgmt.tm.net.interfaces.interface.load(name=interface)
+        interface_stats = Stats(interface.stats.load())
+        logger.info(interface, interface_stats.stat)
+        return interface_stats.stat
 
     @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')
     def get_percent(self, num1, num2):

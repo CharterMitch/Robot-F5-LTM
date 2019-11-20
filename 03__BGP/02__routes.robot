@@ -25,7 +25,7 @@ V4 Static Route
     ${result}           imish -c 'show ip bgp ${v4_static}'
     # Advertised to peer groups: output should have our IPV4 peer group listed
     Should contain      ${result}   ${v4_peer_group}
-    [Teardown]             imish -c 'enable','conf t','no ip route ${v4_static} null'
+    [Teardown]          imish -c 'enable','conf t','no ip route ${v4_static} null'
 
 V6 Static Route
     [Documentation]     Verify V6 static route is advertised.
