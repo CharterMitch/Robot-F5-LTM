@@ -219,7 +219,7 @@ class F5Rest():
         '''
         interface = self.mgmt.tm.net.interfaces.interface.load(name=interface)
         interface_stats = Stats(interface.stats.load())
-        logger.info(interface, interface_stats.stat)
+        logger.info(interface_stats.stat)
         return interface_stats.stat
 
     @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')

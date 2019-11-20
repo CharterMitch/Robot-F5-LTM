@@ -17,10 +17,10 @@ Interface Load Balancing
     [Setup]             Setup Test
     Sleep               120
     Stop Ixia Test
-    ${interface_1}=     Get interface stats 2.1
-    ${interface_2}=     Get interface stats 2.2
-    ${diff_in}=         Percentage difference ${interface_1['counters_pktsIn']} ${interface_2['counters_pktsIn']}
-    ${diff_out}=        Percentage difference ${interface_1['counters_pktsOut']} ${interface_2['counters_pktsOut']}
+    ${int_1}=     Get interface stats 2.1
+    ${int_2}=     Get interface stats 2.2
+    ${diff_in}=         Percentage difference ${int_1.counters_pktsIn.value} ${int_2.counters_pktsIn.value}
+    ${diff_out}=        Percentage difference ${int_1.counters_pktsOut.value} ${int_2.counters_pktsOut.value}
     # Allow 5% difference between interfaces
     Should be true      ${diff_in}<5
     Should be true      ${diff_out}<5
@@ -33,6 +33,8 @@ Setup Test
     imish -c 'enable','conf t','ip route ${cidr} null'
     Start Ixia Test     lacp.rxf
     tmsh reset net interface
+    Get interface stats 2.1
+    Get interface stats 2.2
 
 Teardown Test
     tmsh delete ltm virtual LACP-TEST
