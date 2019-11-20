@@ -200,10 +200,6 @@ class F5Rest():
         logger.info(stats)
         return stats
 
-    @keyword('get ssl profile ${profile} stats')
-    def get_ssl_profile_stats(self, profile):
-        pass
-
     @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')
     def get_percent(self, num1, num2):
         ''' Get the difference between two numbers as a percent. '''
