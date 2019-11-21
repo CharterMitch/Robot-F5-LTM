@@ -2,10 +2,10 @@
 default_config: False
 
 # Send the tmsh configuration found in f5_primary/f5_secondary.tmsh
-send_base_config: True
+send_base_config: False
 
 # Send imish/bgp configuration commands for ZebOS
-send_imish_config: True
+send_imish_config: False
 
 # Configure the Polatis cross-connects
 configure_polatis: False

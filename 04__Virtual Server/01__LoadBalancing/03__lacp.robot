@@ -15,28 +15,32 @@ Interface Load Balancing
     [Documentation]     Verify port-channel load-balancing.
     ...                 Port 2.1 and 2.2 should have equal bandwidth.
     [Setup]             Setup Test
-    Sleep               120
-    Stop Ixia Test
-    ${int_1}=     Get interface stats 2.1
-    ${int_2}=     Get interface stats 2.2
-    ${diff_in}=         Percentage difference ${int_1.counters_pktsIn.value} ${int_2.counters_pktsIn.value}
-    ${diff_out}=        Percentage difference ${int_1.counters_pktsOut.value} ${int_2.counters_pktsOut.value}
-    # Allow 5% difference between interfaces
-    Should be true      ${diff_in}<5
-    Should be true      ${diff_out}<5
+    ${int_1}=           Get interface stats 2.1
+    ${int_2}=           Get interface stats 2.2
+    ${diff_in}=         Percentage difference ${int_1.counters_bitsIn.value} ${int_2.counters_bitsIn.value}
+    ${diff_out}=        Percentage difference ${int_1.counters_bitsOut.value} ${int_2.counters_bitsOut.value}
+    # Allow 10% difference between interfaces
+    Should be true      ${diff_in}<10
+    Should be true      ${diff_out}<10
     [Teardown]          Teardown Test
 
 *** Keywords ***
 Setup Test
-    tmsh create ltm virtual LACP-TEST destination ${network}:any mask ${mask} ip-forward
-    tmsh create ltm nat LACP-NAT { originating-address 198.18.64.0 traffic-group traffic-group-1 translation-address ${network} }
-    imish -c 'enable','conf t','ip route ${cidr} null'
+    tmsh create ltm virtual lacp-test2 destination 198.18.32.2:80 mask 255.255.255.255 ip-protocol tcp pool http_test_pool
+    tmsh create ltm virtual lacp-test3 destination 198.18.32.3:80 mask 255.255.255.255 ip-protocol tcp pool http_test_pool
+    tmsh create ltm virtual lacp-test4 destination 198.18.32.4:80 mask 255.255.255.255 ip-protocol tcp pool http_test_pool
+    tmsh modify ltm virtual-address 198.18.32.2 route-advertisement selective
+    tmsh modify ltm virtual-address 198.18.32.3 route-advertisement selective
+    tmsh modify ltm virtual-address 198.18.32.4 route-advertisement selective
     Start Ixia Test     lacp.rxf
     tmsh reset net interface
+    Sleep               1
     Get interface stats 2.1
     Get interface stats 2.2
+    Sleep               120
 
 Teardown Test
-    tmsh delete ltm virtual LACP-TEST
-    tmsh delete ltm nat LACP-NAT
-    imish -c 'enable','conf t','no ip route ${cidr} null'
+    Stop Ixia Test
+    tmsh delete ltm virtual lacp-test2
+    tmsh delete ltm virtual lacp-test3
+    tmsh delete ltm virtual lacp-test4

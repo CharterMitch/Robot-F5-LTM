@@ -49,7 +49,7 @@ class F5Rest():
                         if 'Error' in result.commandResult:
                             logger.warn(cmd)
                             logger.warn(result.commandResult)
-                    except:
+                    except KeyError:
                         pass
 
     @keyword('load imish ${file}')
