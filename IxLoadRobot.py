@@ -126,13 +126,14 @@ class IxLoadRobot:
             gradually pull them out of the API.
 
             Defalut time between API polls is 4 seconds.
+            TODO: Add a timeout to the while loop?
         '''
         seconds_between_queries = 4
-        logger.warn('Gathering stats while IXIA test runs.')
         _dict = {}
         test_url = urljoin(self.url, 'ixload/test/activeTest')
         stats_url = urljoin(self.url, 'ixload/stats/HTTPClient/values')
         r = self.s.get(test_url)
+        logger.warn('Gathering stats while IXIA test runs.')
         while r.json()['currentState'] == 'Running':
             _dict.update(self.s.get(stats_url).json())
             time.sleep(seconds_between_queries)
@@ -152,9 +153,7 @@ class IxLoadRobot:
         '''
         import pandas
         return pandas.DataFrame.from_dict(
-            data,
-            dtype='int64',
-            orient='index',
+            data, dtype='int64', orient='index'
             )
 
     @keyword("HTML Chart")
@@ -178,7 +177,7 @@ class IxLoadRobot:
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
-        # Only chart the columns requested
+        # Only chart the columns requested from the dataframe
         df[cols].plot.line(ax=ax, legend=True)
         ax.set_xlabel('Time (s)')
         logger.info(mpld3.fig_to_html(fig), html=True)
