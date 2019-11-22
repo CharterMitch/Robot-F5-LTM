@@ -5,7 +5,7 @@ Library         SSHLibrary
 Library         Telnet
 
 *** Variables ***
-${ssh_user}         root
+${ssh_user}     root
 ${password}     default
 
 *** Test Cases ***
