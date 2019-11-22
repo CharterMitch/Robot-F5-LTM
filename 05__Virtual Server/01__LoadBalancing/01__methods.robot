@@ -59,6 +59,7 @@ Member Ratio
     ${df}                   IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML chart              ${df}   ${cols}
+    Should be true          ${df['HTTP Requests Failed'].sum()}==0
     &{stats}=               Get stats for pool ${pool}
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     Should be true          ${pool_member_1}>0
