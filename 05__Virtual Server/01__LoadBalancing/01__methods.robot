@@ -35,7 +35,7 @@ Round Robin
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    Should be true          ${df['HTTP Concurrent Connections'].mean()}>500
+    Should be true          ${df['HTTP Concurrent Connections'].mean()}>400
     Should be true          ${df['HTTP Requests Failed'].sum()}==0
     &{stats}=               Get stats for pool ${pool}
     # Total connections for each pool member
