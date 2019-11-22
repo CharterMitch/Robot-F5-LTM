@@ -13,14 +13,16 @@ Configure F5
     [tags]              Setup
     primary.tmsh modify /cm device bigip1 configsync-ip ${primary_config_sync}
     primary.tmsh modify /cm device bigip1 unicast-address {{ ip ${primary_config_sync} }}
-    secondary.tmsh modify /cm device ${f5_secondary}[name] configsync-ip ${secondary_config_sync}
     secondary.tmsh modify /cm device ${f5_secondary}[name] unicast-address {{ ip ${secondary_config_sync} }}
     primary.tmsh modify /cm trust-domain /Common/Root add-device { device-ip ${f5_secondary}[host] device-name ${f5_secondary}[name] username ${user}[username] password ${user}[password] }
+    secondary.tmsh modify /cm device ${f5_secondary}[name] configsync-ip ${secondary_config_sync}
     primary.tmsh create /cm device-group SyncFailover devices add { bigip1 ${f5_secondary}[name] } type sync-failover save-on-auto-sync true auto-sync enabled
     primary.tmsh modify cm traffic-group traffic-group-1 ha-order { bigip1 ${f5_secondary}[name] } auto-failback-enabled true
+    primary.tmsh run /cm config-sync force-full-load-push to-group device_trust_group
     primary.tmsh run /cm config-sync force-full-load-push to-group SyncFailover
     primary.tmsh save /sys config
     secondary.tmsh save /sys config
+    Sleep               5
 
 Teardown
     [Documentation]     Teardown the configuration for this test suite.
