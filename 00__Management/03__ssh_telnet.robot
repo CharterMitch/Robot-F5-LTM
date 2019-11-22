@@ -5,7 +5,7 @@ Library         SSHLibrary
 Library         Telnet
 
 *** Variables ***
-${user}         root
+${ssh_user}         root
 ${password}     default
 
 *** Test Cases ***
@@ -16,12 +16,12 @@ Telnet Connection Fails
 SSH Connection
     [Documentation]     SSH connection is established.
     sshlibrary.open connection     ${f5_primary}[host]
-    sshlibrary.login    ${user}  ${password}
+    sshlibrary.login    ${ssh_user}  ${password}
     [Teardown]          sshlibrary.close all connections
 
 SSH ACL
     [Documentation]     Verify management SSH ACL blocks connections.
     [Setup]             tmsh modify sys sshd allow delete { ALL }
     sshlibrary.open connection      ${f5_primary}[host]
-    Run Keyword And Expect Error    SSHException:*     sshlibrary.login    ${user}  ${password}
+    Run Keyword And Expect Error    SSHException:*     sshlibrary.login    ${ssh_user}  ${password}
     [Teardown]          tmsh modify sys sshd allow add { ALL }

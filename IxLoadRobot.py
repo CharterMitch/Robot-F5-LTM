@@ -120,19 +120,24 @@ class IxLoadRobot:
 
     @keyword("Gather IXLoad Stats")
     def gather_stats(self):
+        ''' Gather stats from the IXIA API after starting an IXLoad test.
+
+            The API does not store all of the stats at once so we have to
+            gradually pull them out of the API.
+
+            Defalut time between API polls is 4 seconds.
+        '''
+        seconds_between_queries = 4
         logger.warn('Gathering stats while IXIA test runs.')
         _dict = {}
         test_url = urljoin(self.url, 'ixload/test/activeTest')
         stats_url = urljoin(self.url, 'ixload/stats/HTTPClient/values')
         r = self.s.get(test_url)
-        if r.json()['currentState'] != 'Running':
-            logger.warn('Please start an IXIA test before gathering stats.')
         while r.json()['currentState'] == 'Running':
-            # Add stats to the dictionary placeholder
             _dict.update(self.s.get(stats_url).json())
-            time.sleep(4)
+            time.sleep(seconds_between_queries)
             r = self.s.get(test_url)
-        # Convert index to integer from string, then convert to seconds from ms
+        # Convert all keys in dict to seconds from ms (easier to read charts)
         _dict = {int(k)/1000: v for k, v in _dict.items()}
         return _dict
 
