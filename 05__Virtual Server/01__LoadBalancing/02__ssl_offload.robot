@@ -27,7 +27,7 @@ V4 SSL Offload
     ...                     AND             tmsh reset-stats ltm pool
     ...                     AND             tmsh reset-stats ltm profile client-ssl clientssl   
     ${df}=                  IXIA Stats as Pandas df
-    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    @{cols}=                Create List     HTTP Transaction Rate   HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
     Should be true          ${df['HTTP Requests Failed'].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
@@ -43,7 +43,7 @@ V6 SSL Offload
     ...                     AND             tmsh reset-stats ltm pool
     ...                     AND             tmsh reset-stats ltm profile client-ssl clientssl                   
     ${df}=                  IXIA Stats as Pandas df
-    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    @{cols}=                Create List     HTTP Transaction Rate    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
     Should be true          ${df['HTTP Requests Failed'].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol

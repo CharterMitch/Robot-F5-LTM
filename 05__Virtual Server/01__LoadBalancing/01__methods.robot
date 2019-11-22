@@ -33,10 +33,10 @@ Round Robin
     ...                     AND             tmsh reset-stats ltm pool
     ...                     AND             tmsh modify ltm pool ${pool} load-balancing-mode round-robin
     ${df}=                  IXIA Stats as Pandas df
-    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    @{cols}=                Create List     HTTP Connection Rate    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    Should be true          ${df['HTTP Concurrent Connections'].mean()}>400
-    Should be true          ${df['HTTP Requests Failed'].sum()}==0
+    Should be true          ${df['HTTP Connection Rate'].mean()}>1500
+    Should be true          ${df['HTTP Requests Failed'].mean()}<10
     &{stats}=               Get stats for pool ${pool}
     # Total connections for each pool member
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
@@ -58,9 +58,9 @@ Member Ratio
     ...                     AND     tmsh modify ltm pool http_test_pool {members modify {${node_1}:http { ratio 10 }}}
     ...                     AND     tmsh reset-stats ltm pool
     ${df}                   IXIA Stats as Pandas df
-    @{cols}=                Create List     HTTP Concurrent Connections    HTTP Simulated Users    HTTP Requests Failed
+    @{cols}=                Create List     HTTP Connection Rate    HTTP Simulated Users    HTTP Requests Failed
     HTML chart              ${df}   ${cols}
-    Should be true          ${df['HTTP Requests Failed'].sum()}==0
+    Should be true          ${df['HTTP Requests Failed'].mean())}<10
     &{stats}=               Get stats for pool ${pool}
     ${pool_member_1}        Set variable    ${stats['/Common/${node_1}']['serverside_totConns']['value']}
     Should be true          ${pool_member_1}>0
