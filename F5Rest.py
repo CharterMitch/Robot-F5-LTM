@@ -222,7 +222,7 @@ class F5Rest():
         logger.info(interface_stats.stat)
         return interface_stats.stat
 
-    @keyword('Percentage difference ${num1:\d+} ${num2:\d+}')
+    @keyword('Percentage difference ${num1} ${num2}')
     def get_percent(self, num1, num2):
         ''' Get the difference between two numbers as a percent. '''
         num1 = int(num1)
