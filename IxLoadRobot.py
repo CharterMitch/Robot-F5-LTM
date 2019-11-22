@@ -179,7 +179,10 @@ class IxLoadRobot:
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         # Only chart the columns requested from the dataframe
-        df[cols].plot.line(ax=ax, legend=True)
+        try:
+            df[cols].plot.line(ax=ax, legend=True)
+        except KeyError as e:
+            raise AssertionError("Unable to create graph. {}".format(e))
         ax.set_xlabel('Time (s)')
         logger.info(mpld3.fig_to_html(fig), html=True)
 
