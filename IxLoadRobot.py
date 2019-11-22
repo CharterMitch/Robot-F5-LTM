@@ -133,7 +133,7 @@ class IxLoadRobot:
         test_url = urljoin(self.url, 'ixload/test/activeTest')
         stats_url = urljoin(self.url, 'ixload/stats/HTTPClient/values')
         r = self.s.get(test_url)
-        logger.warn('Gathering stats while IXIA test runs.')
+        logger.warn('Gathering stats until IXIA test ends.')
         while r.json()['currentState'] == 'Running':
             _dict.update(self.s.get(stats_url).json())
             time.sleep(seconds_between_queries)
