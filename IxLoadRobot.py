@@ -175,7 +175,7 @@ class IxLoadRobot:
         '''
         import mpld3
         import matplotlib.pyplot as plt
-        logger.info(df.to_html(), html=True)
+        # logger.info(df.to_html(), html=True)
         fig = plt.figure(figsize=(18, 16), dpi=80)
         fig, ax = plt.subplots()
         # Only chart the columns requested from the dataframe
