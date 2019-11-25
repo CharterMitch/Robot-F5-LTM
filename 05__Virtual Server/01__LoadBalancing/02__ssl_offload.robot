@@ -29,7 +29,7 @@ V4 SSL Offload
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Transactions Active   HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    Should be true          ${df['HTTP Requests Failed'].sum()}==0
+    Should be true          ${df['HTTP Requests Failed'][0:75].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands or millions
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
@@ -45,7 +45,7 @@ V6 SSL Offload
     ${df}=                  IXIA Stats as Pandas df
     @{cols}=                Create List     HTTP Transactions Active    HTTP Simulated Users    HTTP Requests Failed
     HTML Chart              ${df}   ${cols}
-    Should be true          ${df['HTTP Requests Failed'].sum()}==0
+    Should be true          ${df['HTTP Requests Failed'][0:75].sum()}==0
     ${result}=              tmsh show ltm profile client-ssl clientssl | grep -i Protocol
     # TLS 1.2 connections should be in the thousands or millions
     Should Match Regexp     ${result}   Version 1.2.+\[KM\]\n
