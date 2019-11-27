@@ -18,20 +18,16 @@ class F5Rest():
     def __init__(self, device, user):
         self.hostname = device['host']
         self.user = user
-        self.f5_rest_connect(self.hostname, self.user)
+        self.connect(self.hostname, self.user)
 
-    def f5_rest_connect(self, hostname, user):
+    def connect(self, hostname, user):
         # logger.warn('Connecting to F5 {}'.format(hostname))
-        try:
-            self.mgmt = ManagementRoot(
-                hostname,
-                user['username'],
-                user['password'],
-                timeout=5
-                )
-        except TimeoutError:
-            AssertionError("Unable to connect to F5 REST API. \
-                            Check settings.yaml.")
+        self.mgmt = ManagementRoot(
+            hostname,
+            user['username'],
+            user['password'],
+            timeout=5
+            )
 
     @keyword('load tmsh ${file}')
     def load_tmsh(self, file):
